@@ -3,20 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Buffet Orders API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: orders
+    description: Order operations
+  - name: stats
+    description: Statistics operations
+  - name: menu
+    description: Menu operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,152 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders:
+    get:
+      operationId: getOrders
+      tags: [orders]
+      summary: Get all orders (worker) or my orders (customer)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, all]
+        - name: mine
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/complete:
+    patch:
+      operationId: completeOrder
+      tags: [orders]
+      summary: Mark order as completed (worker only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order marked as completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats/daily:
+    get:
+      operationId: getDailyStats
+      tags: [stats]
+      summary: Get daily statistics for all users
+      responses:
+        "200":
+          description: Daily statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyStats"
+
+  /menu:
+    get:
+      operationId: getMenuItems
+      tags: [menu]
+      summary: Get all menu items
+      responses:
+        "200":
+          description: Menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +187,213 @@ components:
       required:
         - status
 
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [customer, worker]
+      required:
+        - username
+        - password
+        - displayName
+        - role
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [customer, worker]
+      required:
+        - id
+        - username
+        - displayName
+        - role
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        userDisplayName:
+          type: string
+        menuItemId:
+          type: string
+        menuItemName:
+          type: string
+        menuItemNameAr:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed]
+        createdAt:
+          type: string
+        completedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - userDisplayName
+        - menuItemId
+        - menuItemName
+        - menuItemNameAr
+        - status
+        - createdAt
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        menuItemId:
+          type: string
+        notes:
+          type: string
+      required:
+        - menuItemId
+
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        nameAr:
+          type: string
+        category:
+          type: string
+          enum: [hot, cold, juice, other]
+        icon:
+          type: string
+      required:
+        - id
+        - name
+        - nameAr
+        - category
+        - icon
+
+    DailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+        totalOrders:
+          type: number
+        completedOrders:
+          type: number
+        pendingOrders:
+          type: number
+        byUser:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserStat"
+        byItem:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemStat"
+      required:
+        - date
+        - totalOrders
+        - completedOrders
+        - pendingOrders
+        - byUser
+        - byItem
+
+    UserStat:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        totalOrders:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserItemStat"
+      required:
+        - userId
+        - displayName
+        - totalOrders
+        - items
+
+    UserItemStat:
+      type: object
+      properties:
+        menuItemId:
+          type: string
+        menuItemName:
+          type: string
+        menuItemNameAr:
+          type: string
+        count:
+          type: number
+      required:
+        - menuItemId
+        - menuItemName
+        - menuItemNameAr
+        - count
+
+    ItemStat:
+      type: object
+      properties:
+        menuItemId:
+          type: string
+        menuItemName:
+          type: string
+        menuItemNameAr:
+          type: string
+        count:
+          type: number
+      required:
+        - menuItemId
+        - menuItemName
+        - menuItemNameAr
+        - count
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

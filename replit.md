@@ -1,36 +1,49 @@
-# [Project name]
+# بوفيه الشركة — Buffet Orders App
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+تطبيق موبايل لإدارة طلبات البوفيه داخل الشركة — موظفون يطلبون مشروبات، عامل البوفيه يستلم الطلبات ويعلم عليها.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/mobile run dev` — run the Expo mobile app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
+- API: Express 5 + JWT auth (jsonwebtoken)
+- DB: In-memory store (no database needed)
+- Mobile: Expo + React Native + Expo Router
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract (source of truth)
+- `lib/api-client-react/src/generated/` — generated hooks & schemas (do not edit)
+- `artifacts/api-server/src/lib/store.ts` — in-memory users & orders store
+- `artifacts/api-server/src/lib/jwt.ts` — JWT sign/verify helpers
+- `artifacts/api-server/src/routes/` — auth, orders, stats, menu route handlers
+- `artifacts/mobile/app/` — all Expo screens
+- `artifacts/mobile/context/AuthContext.tsx` — auth state + token management
+- `artifacts/mobile/constants/colors.ts` — warm amber/gold theme tokens
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **In-memory store**: No database provisioned — data lives in server RAM. Restarting the API server resets all orders. Good for a first build.
+- **JWT auth**: Tokens stored in AsyncStorage on the device, sent as Bearer header on every API call via `setAuthTokenGetter`.
+- **Worker notifications via polling**: Worker screen polls every 5 seconds for new pending orders. Haptic feedback fires when a new order arrives.
+- **Role-based routing**: After login, the app redirects to `/(customer)` or `/(worker)` based on JWT role.
+- **Default worker account**: `worker` / `worker123` and `admin` / `admin123` pre-seeded.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Customer**: Login → pick a drink from the menu → add notes → submit order → see live status in "My Orders"
+- **Worker**: Login → see pending orders in real-time → tap "Delivered" to complete → view completed orders → end-of-day stats per person per item
+- **Stats**: Total orders, completed, pending, breakdown by person and by item type
 
 ## User preferences
 
@@ -38,7 +51,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Restarting the API server clears all in-memory orders and users (except pre-seeded worker accounts).
+- After any OpenAPI spec change, always run `pnpm --filter @workspace/api-spec run codegen` before using the new hooks.
+- Worker accounts can be registered via the Register screen (choose "عامل بوفيه" role).
 
 ## Pointers
 

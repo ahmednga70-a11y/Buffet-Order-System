@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "Q-DT9AxIMvxFK2Fudu08-"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "buffet app icon"
