@@ -34,7 +34,9 @@ export default function LoginScreen() {
 
     try {
       const result = await loginMutation.mutateAsync({ data: { username: username.trim(), password } });
-      await login(result.user as { id: string; username: string; displayName: string; role: "customer" | "worker" }, result.token);
+      const authUser = result.user as { id: string; username: string; displayName: string; role: "customer" | "worker" };
+      await login(authUser, result.token);
+      router.replace(authUser.role === "worker" ? "/(worker)" : "/(customer)");
     } catch {
       Alert.alert("خطأ", "اسم المستخدم أو كلمة المرور غلط");
     }
