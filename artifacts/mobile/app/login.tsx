@@ -136,7 +136,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: colors.light.foreground,
     backgroundColor: colors.light.card,
-    flex: 1,
   },
   passwordRow: {
     flexDirection: "row",
