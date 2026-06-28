@@ -92,7 +92,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [pending, completed, all]
+            enum: [pending, delivered, completed, all]
         - name: mine
           in: query
           schema:
@@ -124,11 +124,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/Order"
 
-  /orders/{id}/complete:
+  /orders/{id}/deliver:
     patch:
-      operationId: completeOrder
+      operationId: deliverOrder
       tags: [orders]
-      summary: Mark order as completed (worker only)
+      summary: Mark order as delivered (worker only)
       parameters:
         - name: id
           in: path
@@ -137,7 +137,32 @@ paths:
             type: string
       responses:
         "200":
-          description: Order marked as completed
+          description: Order marked as delivered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}/confirm:
+    patch:
+      operationId: confirmOrder
+      tags: [orders]
+      summary: Confirm order received (customer only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order confirmed as received
           content:
             application/json:
               schema:
@@ -264,7 +289,7 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, completed]
+          enum: [pending, delivered, completed]
         createdAt:
           type: string
         completedAt:

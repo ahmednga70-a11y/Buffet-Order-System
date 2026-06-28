@@ -14,8 +14,9 @@ export interface Order {
   menuItemName: string;
   menuItemNameAr: string;
   notes?: string;
-  status: "pending" | "completed";
+  status: "pending" | "delivered" | "completed";
   createdAt: string;
+  deliveredAt?: string;
   completedAt?: string;
 }
 
@@ -86,7 +87,23 @@ export function getOrdersByUser(userId: string): Order[] {
   return Array.from(orders.values()).filter((o) => o.userId === userId);
 }
 
-export function getOrdersByStatus(status: "pending" | "completed" | "all"): Order[] {
+export function deliverOrder(id: string): Order | undefined {
+  const order = orders.get(id);
+  if (!order) return undefined;
+  const updated = { ...order, status: "delivered" as const, deliveredAt: new Date().toISOString() };
+  orders.set(id, updated);
+  return updated;
+}
+
+export function confirmOrder(id: string): Order | undefined {
+  const order = orders.get(id);
+  if (!order) return undefined;
+  const updated = { ...order, status: "completed" as const, completedAt: new Date().toISOString() };
+  orders.set(id, updated);
+  return updated;
+}
+
+export function getOrdersByStatus(status: "pending" | "delivered" | "completed" | "all"): Order[] {
   const all = Array.from(orders.values());
   if (status === "all") return all;
   return all.filter((o) => o.status === status);

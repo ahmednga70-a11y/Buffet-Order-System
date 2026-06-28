@@ -60,7 +60,7 @@ export const RegisterResponse = zod.object({
  * @summary Get all orders (worker) or my orders (customer)
  */
 export const GetOrdersQueryParams = zod.object({
-  "status": zod.enum(['pending', 'completed', 'all']).optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'all']).optional(),
   "mine": zod.coerce.boolean().optional()
 })
 
@@ -72,7 +72,7 @@ export const GetOrdersResponseItem = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
-  "status": zod.enum(['pending', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
@@ -95,20 +95,20 @@ export const CreateOrderResponse = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
-  "status": zod.enum(['pending', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
 
 
 /**
- * @summary Mark order as completed (worker only)
+ * @summary Mark order as delivered (worker only)
  */
-export const CompleteOrderParams = zod.object({
+export const DeliverOrderParams = zod.object({
   "id": zod.coerce.string()
 })
 
-export const CompleteOrderResponse = zod.object({
+export const DeliverOrderResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "userDisplayName": zod.string(),
@@ -116,7 +116,28 @@ export const CompleteOrderResponse = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
-  "status": zod.enum(['pending', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Confirm order received (customer only)
+ */
+export const ConfirmOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ConfirmOrderResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userDisplayName": zod.string(),
+  "menuItemId": zod.string(),
+  "menuItemName": zod.string(),
+  "menuItemNameAr": zod.string(),
+  "notes": zod.string().optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })

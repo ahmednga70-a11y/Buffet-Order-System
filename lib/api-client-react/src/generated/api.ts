@@ -430,20 +430,20 @@ export const useCreateOrder = <TError = ErrorType<unknown>,
       return useMutation(getCreateOrderMutationOptions(options));
     }
 
-export const getCompleteOrderUrl = (id: string,) => {
+export const getDeliverOrderUrl = (id: string,) => {
 
 
 
 
-  return `/api/orders/${id}/complete`
+  return `/api/orders/${id}/deliver`
 }
 
 /**
- * @summary Mark order as completed (worker only)
+ * @summary Mark order as delivered (worker only)
  */
-export const completeOrder = async (id: string, options?: RequestInit): Promise<Order> => {
+export const deliverOrder = async (id: string, options?: RequestInit): Promise<Order> => {
 
-  return customFetch<Order>(getCompleteOrderUrl(id),
+  return customFetch<Order>(getDeliverOrderUrl(id),
   {
     ...options,
     method: 'PATCH'
@@ -455,11 +455,11 @@ export const completeOrder = async (id: string, options?: RequestInit): Promise<
 
 
 
-export const getCompleteOrderMutationOptions = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof completeOrder>>, TError,{id: string}, TContext> => {
+export const getDeliverOrderMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deliverOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deliverOrder>>, TError,{id: string}, TContext> => {
 
-const mutationKey = ['completeOrder'];
+const mutationKey = ['deliverOrder'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -469,10 +469,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeOrder>>, {id: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deliverOrder>>, {id: string}> = (props) => {
           const {id} = props ?? {};
 
-          return  completeOrder(id,requestOptions)
+          return  deliverOrder(id,requestOptions)
         }
 
 
@@ -482,22 +482,92 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CompleteOrderMutationResult = NonNullable<Awaited<ReturnType<typeof completeOrder>>>
+    export type DeliverOrderMutationResult = NonNullable<Awaited<ReturnType<typeof deliverOrder>>>
 
-    export type CompleteOrderMutationError = ErrorType<ErrorResponse>
+    export type DeliverOrderMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Mark order as completed (worker only)
+ * @summary Mark order as delivered (worker only)
  */
-export const useCompleteOrder = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useDeliverOrder = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deliverOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof completeOrder>>,
+        Awaited<ReturnType<typeof deliverOrder>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getCompleteOrderMutationOptions(options));
+      return useMutation(getDeliverOrderMutationOptions(options));
+    }
+
+export const getConfirmOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/confirm`
+}
+
+/**
+ * @summary Confirm order received (customer only)
+ */
+export const confirmOrder = async (id: string, options?: RequestInit): Promise<Order> => {
+
+  return customFetch<Order>(getConfirmOrderUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getConfirmOrderMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmOrder>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['confirmOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmOrder>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  confirmOrder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmOrderMutationResult = NonNullable<Awaited<ReturnType<typeof confirmOrder>>>
+
+    export type ConfirmOrderMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Confirm order received (customer only)
+ */
+export const useConfirmOrder = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmOrder>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getConfirmOrderMutationOptions(options));
     }
 
 export const getGetDailyStatsUrl = () => {

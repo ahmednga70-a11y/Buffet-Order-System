@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrder, completeOrder, getOrdersByUser, getOrdersByStatus, MENU_ITEMS } from "../lib/store.js";
+import { createOrder, deliverOrder, confirmOrder, getOrdersByUser, getOrdersByStatus, MENU_ITEMS } from "../lib/store.js";
 import { extractToken, verifyToken } from "../lib/jwt.js";
 
 const router = Router();
@@ -23,7 +23,7 @@ router.get("/orders", (req, res) => {
       orders = orders.filter((o) => o.status === status);
     }
   } else {
-    orders = getOrdersByStatus(status as "pending" | "completed" | "all");
+    orders = getOrdersByStatus(status as "pending" | "delivered" | "completed" | "all");
   }
 
   orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -68,7 +68,7 @@ router.post("/orders", (req, res) => {
   res.status(201).json(order);
 });
 
-router.patch("/orders/:id/complete", (req, res) => {
+router.patch("/orders/:id/deliver", (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -78,11 +78,29 @@ router.patch("/orders/:id/complete", (req, res) => {
   }
 
   if (user.role !== "worker") {
-    res.status(403).json({ error: "Only workers can complete orders" });
+    res.status(403).json({ error: "Only workers can mark orders as delivered" });
     return;
   }
 
-  const updated = completeOrder(req.params["id"]);
+  const updated = deliverOrder(req.params["id"]);
+  if (!updated) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  res.json(updated);
+});
+
+router.patch("/orders/:id/confirm", (req, res) => {
+  const token = extractToken(req.headers.authorization);
+  const user = token ? verifyToken(token) : null;
+
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const updated = confirmOrder(req.params["id"]);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;

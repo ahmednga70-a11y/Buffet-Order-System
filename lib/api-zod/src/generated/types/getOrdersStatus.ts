@@ -11,6 +11,7 @@ export type GetOrdersStatus = typeof GetOrdersStatus[keyof typeof GetOrdersStatu
 
 export const GetOrdersStatus = {
   pending: 'pending',
+  delivered: 'delivered',
   completed: 'completed',
   all: 'all',
 } as const;
