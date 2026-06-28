@@ -2,6 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
+// Module-level token — the getter is registered once and always reads from here
+let _token: string | null = null;
+
+setAuthTokenGetter(() => _token);
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
 interface AuthUser {
@@ -44,11 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
         if (storedToken && storedUser) {
           const parsedUser = JSON.parse(storedUser) as AuthUser;
+          _token = storedToken;          // set module-level first
           setToken(storedToken);
           setUser(parsedUser);
-          setAuthTokenGetter(() => storedToken);
         }
       } catch {
+        // ignore restore errors
       } finally {
         setIsLoading(false);
       }
@@ -57,20 +62,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (authUser: AuthUser, authToken: string) => {
+    _token = authToken;                  // set module-level first
     await Promise.all([
       AsyncStorage.setItem(TOKEN_KEY, authToken),
       AsyncStorage.setItem(USER_KEY, JSON.stringify(authUser)),
     ]);
     setToken(authToken);
     setUser(authUser);
-    setAuthTokenGetter(() => authToken);
   }, []);
 
   const logout = useCallback(async () => {
-    await Promise.all([AsyncStorage.removeItem(TOKEN_KEY), AsyncStorage.removeItem(USER_KEY)]);
+    _token = null;                       // clear module-level first
+    await Promise.all([
+      AsyncStorage.removeItem(TOKEN_KEY),
+      AsyncStorage.removeItem(USER_KEY),
+    ]);
     setToken(null);
     setUser(null);
-    setAuthTokenGetter(null);
   }, []);
 
   return (
