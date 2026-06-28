@@ -1,4 +1,5 @@
 import { useLogin } from "@workspace/api-client-react";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -23,6 +24,7 @@ export default function LoginScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -63,19 +65,26 @@ export default function LoginScreen() {
               onChangeText={setUsername}
               autoCapitalize="none"
               autoCorrect={false}
+              textAlign="right"
             />
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>كلمة المرور</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="أدخل كلمة المرور"
-              placeholderTextColor={colors.light.mutedForeground}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder="أدخل كلمة المرور"
+                placeholderTextColor={colors.light.mutedForeground}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                textAlign="right"
+              />
+              <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
+                <Feather name={showPassword ? "eye-off" : "eye"} size={20} color={colors.light.mutedForeground} />
+              </Pressable>
+            </View>
           </View>
 
           <Pressable
@@ -127,7 +136,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: colors.light.foreground,
     backgroundColor: colors.light.card,
-    textAlign: "right",
+    flex: 1,
+  },
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  passwordInput: { flex: 1 },
+  eyeBtn: {
+    width: 48,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: colors.light.border,
+    borderRadius: colors.radius,
+    backgroundColor: colors.light.card,
+    alignItems: "center",
+    justifyContent: "center",
   },
   loginBtn: {
     backgroundColor: colors.light.primary,

@@ -1,4 +1,5 @@
 import { useRegister } from "@workspace/api-client-react";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -26,6 +27,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<"customer" | "worker">("customer");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
     if (!username.trim() || !password.trim() || !displayName.trim()) {
@@ -43,8 +45,17 @@ export default function RegisterScreen() {
       });
       await login(result.user as { id: string; username: string; displayName: string; role: "customer" | "worker" }, result.token);
     } catch (err: unknown) {
-      const message = (err as { data?: { error?: string } })?.data?.error || "حصل خطأ، حاول تاني";
-      Alert.alert("خطأ", message);
+      let message = "حصل خطأ، حاول تاني";
+      if (err && typeof err === "object") {
+        const apiErr = err as { data?: unknown; message?: string };
+        if (apiErr.data && typeof apiErr.data === "object") {
+          const data = apiErr.data as { error?: string };
+          if (data.error) message = data.error === "Username already exists" ? "اسم المستخدم ده موجود قبل كده، اختار اسم تاني" : data.error;
+        } else if (apiErr.message) {
+          message = apiErr.message;
+        }
+      }
+      Alert.alert("خطأ في التسجيل", message);
     }
   };
 
@@ -85,7 +96,7 @@ export default function RegisterScreen() {
             <Text style={styles.label}>اسم المستخدم</Text>
             <TextInput
               style={styles.input}
-              placeholder="اختار اسم مستخدم"
+              placeholder="اختار اسم مستخدم (إنجليزي)"
               placeholderTextColor={colors.light.mutedForeground}
               value={username}
               onChangeText={setUsername}
@@ -97,15 +108,20 @@ export default function RegisterScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>كلمة المرور</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="كلمة مرور قوية"
-              placeholderTextColor={colors.light.mutedForeground}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              textAlign="right"
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder="4 أحرف على الأقل"
+                placeholderTextColor={colors.light.mutedForeground}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                textAlign="right"
+              />
+              <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
+                <Feather name={showPassword ? "eye-off" : "eye"} size={20} color={colors.light.mutedForeground} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -167,6 +183,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: colors.light.foreground,
     backgroundColor: colors.light.card,
+    flex: 1,
+  },
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  passwordInput: { flex: 1 },
+  eyeBtn: {
+    width: 48,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: colors.light.border,
+    borderRadius: colors.radius,
+    backgroundColor: colors.light.card,
+    alignItems: "center",
+    justifyContent: "center",
   },
   roleRow: { flexDirection: "row", gap: 12 },
   roleBtn: {
