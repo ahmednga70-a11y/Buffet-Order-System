@@ -1,5 +1,5 @@
 import {
-  useCompleteOrder,
+  useDeliverOrder,
   useGetOrders,
   getGetOrdersQueryKey,
 } from "@workspace/api-client-react";
@@ -38,7 +38,7 @@ export default function WorkerOrdersScreen() {
     { query: { refetchInterval: 5000, queryKey: getGetOrdersQueryKey({ status: "pending" }) } }
   );
 
-  const completeOrderMutation = useCompleteOrder();
+  const deliverOrderMutation = useDeliverOrder();
 
   useEffect(() => {
     const count = orders?.length ?? 0;
@@ -50,14 +50,14 @@ export default function WorkerOrdersScreen() {
     prevCountRef.current = count;
   }, [orders?.length]);
 
-  const handleComplete = (id: string, name: string) => {
-    Alert.alert("تأكيد", `وصلت "${name}"؟`, [
+  const handleDeliver = (id: string, name: string, personName: string) => {
+    Alert.alert("تأكيد التسليم", `هتسلم "${name}" لـ ${personName}؟`, [
       { text: "لأ", style: "cancel" },
       {
-        text: "أيوه وصلت",
+        text: "أيوه سلّمت",
         onPress: async () => {
           try {
-            await completeOrderMutation.mutateAsync({ id });
+            await deliverOrderMutation.mutateAsync({ id });
             if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
           } catch {
@@ -82,10 +82,10 @@ export default function WorkerOrdersScreen() {
         </View>
         <Pressable
           style={({ pressed }) => [styles.doneBtn, pressed && { opacity: 0.8 }]}
-          onPress={() => handleComplete(item.id, item.menuItemNameAr)}
-          disabled={completeOrderMutation.isPending}
+          onPress={() => handleDeliver(item.id, item.menuItemNameAr, item.userDisplayName)}
+          disabled={deliverOrderMutation.isPending}
         >
-          <Text style={styles.doneBtnText}>وصّلت ✓</Text>
+          <Text style={styles.doneBtnText}>سلّمت ✓</Text>
         </Pressable>
       </View>
     </View>

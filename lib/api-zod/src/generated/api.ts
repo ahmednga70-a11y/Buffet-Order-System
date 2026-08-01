@@ -123,6 +123,27 @@ export const DeliverOrderResponse = zod.object({
 
 
 /**
+ * @summary Customer rejects a delivered order (returns to pending)
+ */
+export const RejectOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RejectOrderResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userDisplayName": zod.string(),
+  "menuItemId": zod.string(),
+  "menuItemName": zod.string(),
+  "menuItemNameAr": zod.string(),
+  "notes": zod.string().optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().optional()
+})
+
+
+/**
  * @summary Confirm order received (customer only)
  */
 export const ConfirmOrderParams = zod.object({

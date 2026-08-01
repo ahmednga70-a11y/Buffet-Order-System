@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrder, deliverOrder, confirmOrder, getOrdersByUser, getOrdersByStatus, MENU_ITEMS } from "../lib/store.js";
+import { createOrder, deliverOrder, confirmOrder, rejectOrder, getOrdersByUser, getOrdersByStatus, MENU_ITEMS } from "../lib/store.js";
 import { extractToken, verifyToken } from "../lib/jwt.js";
 
 const router = Router();
@@ -83,6 +83,24 @@ router.patch("/orders/:id/deliver", (req, res) => {
   }
 
   const updated = deliverOrder(req.params["id"]);
+  if (!updated) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  res.json(updated);
+});
+
+router.patch("/orders/:id/reject", (req, res) => {
+  const token = extractToken(req.headers.authorization);
+  const user = token ? verifyToken(token) : null;
+
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const updated = rejectOrder(req.params["id"]);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;

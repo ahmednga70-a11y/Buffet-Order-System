@@ -103,6 +103,14 @@ export function confirmOrder(id: string): Order | undefined {
   return updated;
 }
 
+export function rejectOrder(id: string): Order | undefined {
+  const order = orders.get(id);
+  if (!order) return undefined;
+  const updated = { ...order, status: "pending" as const, deliveredAt: undefined };
+  orders.set(id, updated);
+  return updated;
+}
+
 export function getOrdersByStatus(status: "pending" | "delivered" | "completed" | "all"): Order[] {
   const all = Array.from(orders.values());
   if (status === "all") return all;

@@ -500,6 +500,76 @@ export const useDeliverOrder = <TError = ErrorType<ErrorResponse>,
       return useMutation(getDeliverOrderMutationOptions(options));
     }
 
+export const getRejectOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/reject`
+}
+
+/**
+ * @summary Customer rejects a delivered order (returns to pending)
+ */
+export const rejectOrder = async (id: string, options?: RequestInit): Promise<Order> => {
+
+  return customFetch<Order>(getRejectOrderUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getRejectOrderMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectOrder>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['rejectOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectOrder>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectOrder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectOrderMutationResult = NonNullable<Awaited<ReturnType<typeof rejectOrder>>>
+
+    export type RejectOrderMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Customer rejects a delivered order (returns to pending)
+ */
+export const useRejectOrder = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectOrder>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRejectOrderMutationOptions(options));
+    }
+
 export const getConfirmOrderUrl = (id: string,) => {
 
 
