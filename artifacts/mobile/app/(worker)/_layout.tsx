@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { Feather } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
 import React from "react";
@@ -13,21 +13,21 @@ function NativeTabLayout({ isAdmin }: { isAdmin: boolean }) {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "bell", selected: "bell.fill" }} />
-        <Label>الطلبات</Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "bell", selected: "bell.fill" }} />
+        <NativeTabs.Trigger.Label>الطلبات</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="completed">
-        <Icon sf={{ default: "checkmark.circle", selected: "checkmark.circle.fill" }} />
-        <Label>منجز</Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "checkmark.circle", selected: "checkmark.circle.fill" }} />
+        <NativeTabs.Trigger.Label>منجز</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="stats">
-        <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
-        <Label>إحصائيات</Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
+        <NativeTabs.Trigger.Label>إحصائيات</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       {isAdmin && (
         <NativeTabs.Trigger name="users">
-          <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
-          <Label>الإدارة</Label>
+          <NativeTabs.Trigger.Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+          <NativeTabs.Trigger.Label>الإدارة</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
       )}
     </NativeTabs>

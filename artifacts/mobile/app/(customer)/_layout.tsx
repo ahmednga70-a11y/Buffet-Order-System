@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { Feather } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
 import React from "react";
@@ -12,12 +12,12 @@ function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "cup.and.saucer", selected: "cup.and.saucer.fill" }} />
-        <Label>اطلب</Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "cup.and.saucer", selected: "cup.and.saucer.fill" }} />
+        <NativeTabs.Trigger.Label>اطلب</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="my-orders">
-        <Icon sf="list.bullet" />
-        <Label>طلباتي</Label>
+        <NativeTabs.Trigger.Icon sf="list.bullet" />
+        <NativeTabs.Trigger.Label>طلباتي</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
