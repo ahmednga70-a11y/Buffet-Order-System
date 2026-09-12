@@ -6,7 +6,15 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 let _token: string | null = null;
 
 setAuthTokenGetter(() => _token);
-setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+
+// Production APKs use the published API URL. Development builds keep using
+// the Replit domain when EXPO_PUBLIC_API_URL is not provided.
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL
+  ? process.env.EXPO_PUBLIC_API_URL
+  : process.env.EXPO_PUBLIC_DOMAIN
+    ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
+    : null;
+setBaseUrl(apiBaseUrl);
 
 interface AuthUser {
   id: string;
