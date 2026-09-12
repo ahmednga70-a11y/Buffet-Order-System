@@ -16,7 +16,7 @@ function NativeTabLayout() {
         <Label>اطلب</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="my-orders">
-        <Icon sf={{ default: "list.bullet", selected: "list.bullet.fill" }} />
+        <Icon sf="list.bullet" />
         <Label>طلباتي</Label>
       </NativeTabs.Trigger>
     </NativeTabs>

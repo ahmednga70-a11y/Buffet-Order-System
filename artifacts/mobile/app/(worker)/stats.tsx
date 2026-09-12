@@ -1,4 +1,4 @@
-import { useGetDailyStats } from "@workspace/api-client-react";
+import { getGetDailyStatsQueryKey, useGetDailyStats } from "@workspace/api-client-react";
 import React from "react";
 import {
   ActivityIndicator,
@@ -26,7 +26,7 @@ export default function StatsScreen() {
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
   const { data: stats, isLoading, refetch, isRefetching } = useGetDailyStats({
-    query: { refetchInterval: 30000 },
+    query: { queryKey: getGetDailyStatsQueryKey(), refetchInterval: 30000 },
   });
 
   if (isLoading) {
