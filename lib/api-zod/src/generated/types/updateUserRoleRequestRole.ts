@@ -11,6 +11,5 @@ export type UpdateUserRoleRequestRole = typeof UpdateUserRoleRequestRole[keyof t
 
 export const UpdateUserRoleRequestRole = {
   customer: 'customer',
-  worker: 'worker',
   admin: 'admin',
 } as const;

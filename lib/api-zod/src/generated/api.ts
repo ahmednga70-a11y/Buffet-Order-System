@@ -94,7 +94,10 @@ export const GetAdminUsersResponseItem = zod.object({
   "id": zod.string(),
   "username": zod.string(),
   "displayName": zod.string(),
-  "role": zod.enum(['customer', 'worker', 'admin'])
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string().nullable(),
+  "projectName": zod.string().nullable(),
+  "isActive": zod.boolean()
 })
 export const GetAdminUsersResponse = zod.array(GetAdminUsersResponseItem)
 
@@ -107,14 +110,71 @@ export const UpdateUserRoleParams = zod.object({
 })
 
 export const UpdateUserRoleBody = zod.object({
-  "role": zod.enum(['customer', 'worker', 'admin'])
+  "role": zod.enum(['customer', 'admin'])
 })
 
 export const UpdateUserRoleResponse = zod.object({
   "id": zod.string(),
   "username": zod.string(),
   "displayName": zod.string(),
-  "role": zod.enum(['customer', 'worker', 'admin'])
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string().nullable(),
+  "projectName": zod.string().nullable(),
+  "isActive": zod.boolean()
+})
+
+
+/**
+ * @summary Create a buffet worker for one project (admin only)
+ */
+export const createWorkerBodyPasswordMin = 8;
+
+
+
+export const CreateWorkerBody = zod.object({
+  "username": zod.string(),
+  "password": zod.string().min(createWorkerBodyPasswordMin),
+  "displayName": zod.string(),
+  "projectId": zod.string()
+})
+
+export const CreateWorkerResponse = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string().nullable(),
+  "projectName": zod.string().nullable(),
+  "isActive": zod.boolean()
+})
+
+
+/**
+ * @summary Change a worker project, password, name, or active status
+ */
+export const UpdateWorkerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateWorkerBodyPasswordMin = 8;
+
+
+
+export const UpdateWorkerBody = zod.object({
+  "displayName": zod.string().optional(),
+  "password": zod.string().min(updateWorkerBodyPasswordMin).optional(),
+  "projectId": zod.string().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateWorkerResponse = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string().nullable(),
+  "projectName": zod.string().nullable(),
+  "isActive": zod.boolean()
 })
 
 

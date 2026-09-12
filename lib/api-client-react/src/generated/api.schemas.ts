@@ -77,6 +77,11 @@ export interface AdminUser {
   username: string;
   displayName: string;
   role: AdminUserRole;
+  /** @nullable */
+  projectId: string | null;
+  /** @nullable */
+  projectName: string | null;
+  isActive: boolean;
 }
 
 export type UpdateUserRoleRequestRole = typeof UpdateUserRoleRequestRole[keyof typeof UpdateUserRoleRequestRole];
@@ -84,12 +89,27 @@ export type UpdateUserRoleRequestRole = typeof UpdateUserRoleRequestRole[keyof t
 
 export const UpdateUserRoleRequestRole = {
   customer: 'customer',
-  worker: 'worker',
   admin: 'admin',
 } as const;
 
 export interface UpdateUserRoleRequest {
   role: UpdateUserRoleRequestRole;
+}
+
+export interface CreateWorkerRequest {
+  username: string;
+  /** @minLength 8 */
+  password: string;
+  displayName: string;
+  projectId: string;
+}
+
+export interface UpdateWorkerRequest {
+  displayName?: string;
+  /** @minLength 8 */
+  password?: string;
+  projectId?: string;
+  isActive?: boolean;
 }
 
 export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];

@@ -184,6 +184,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/workers:
+    post:
+      operationId: createWorker
+      tags: [admin]
+      summary: Create a buffet worker for one project (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkerRequest"
+      responses:
+        "201":
+          description: Worker created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Invalid worker data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/workers/{id}:
+    patch:
+      operationId: updateWorker
+      tags: [admin]
+      summary: Change a worker project, password, name, or active status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkerRequest"
+      responses:
+        "200":
+          description: Worker updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Invalid worker data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders:
     get:
       operationId: getOrders
@@ -443,20 +511,60 @@ components:
         role:
           type: string
           enum: [customer, worker, admin]
+        projectId:
+          type: [string, "null"]
+        projectName:
+          type: [string, "null"]
+        isActive:
+          type: boolean
       required:
         - id
         - username
         - displayName
         - role
+        - projectId
+        - projectName
+        - isActive
 
     UpdateUserRoleRequest:
       type: object
       properties:
         role:
           type: string
-          enum: [customer, worker, admin]
+          enum: [customer, admin]
       required:
         - role
+
+    CreateWorkerRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        displayName:
+          type: string
+        projectId:
+          type: string
+      required:
+        - username
+        - password
+        - displayName
+        - projectId
+
+    UpdateWorkerRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        projectId:
+          type: string
+        isActive:
+          type: boolean
 
     Order:
       type: object

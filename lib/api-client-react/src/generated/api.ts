@@ -24,6 +24,7 @@ import type {
   AuthResponse,
   CreateOrderRequest,
   CreateProjectRequest,
+  CreateWorkerRequest,
   DailyStats,
   ErrorResponse,
   GetOrdersParams,
@@ -33,7 +34,8 @@ import type {
   Order,
   Project,
   RegisterRequest,
-  UpdateUserRoleRequest
+  UpdateUserRoleRequest,
+  UpdateWorkerRequest
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -573,6 +575,147 @@ export const useUpdateUserRole = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUpdateUserRoleMutationOptions(options));
+    }
+
+export const getCreateWorkerUrl = () => {
+
+
+
+
+  return `/api/admin/workers`
+}
+
+/**
+ * @summary Create a buffet worker for one project (admin only)
+ */
+export const createWorker = async (createWorkerRequest: CreateWorkerRequest, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getCreateWorkerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createWorkerRequest)
+  }
+);}
+
+
+
+
+export const getCreateWorkerMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorker>>, TError,{data: BodyType<CreateWorkerRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWorker>>, TError,{data: BodyType<CreateWorkerRequest>}, TContext> => {
+
+const mutationKey = ['createWorker'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWorker>>, {data: BodyType<CreateWorkerRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWorker(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWorkerMutationResult = NonNullable<Awaited<ReturnType<typeof createWorker>>>
+    export type CreateWorkerMutationBody = BodyType<CreateWorkerRequest>
+    export type CreateWorkerMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a buffet worker for one project (admin only)
+ */
+export const useCreateWorker = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorker>>, TError,{data: BodyType<CreateWorkerRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWorker>>,
+        TError,
+        {data: BodyType<CreateWorkerRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateWorkerMutationOptions(options));
+    }
+
+export const getUpdateWorkerUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/workers/${id}`
+}
+
+/**
+ * @summary Change a worker project, password, name, or active status
+ */
+export const updateWorker = async (id: string,
+    updateWorkerRequest: UpdateWorkerRequest, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getUpdateWorkerUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateWorkerRequest)
+  }
+);}
+
+
+
+
+export const getUpdateWorkerMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWorker>>, TError,{id: string;data: BodyType<UpdateWorkerRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWorker>>, TError,{id: string;data: BodyType<UpdateWorkerRequest>}, TContext> => {
+
+const mutationKey = ['updateWorker'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWorker>>, {id: string;data: BodyType<UpdateWorkerRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateWorker(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWorkerMutationResult = NonNullable<Awaited<ReturnType<typeof updateWorker>>>
+    export type UpdateWorkerMutationBody = BodyType<UpdateWorkerRequest>
+    export type UpdateWorkerMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Change a worker project, password, name, or active status
+ */
+export const useUpdateWorker = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWorker>>, TError,{id: string;data: BodyType<UpdateWorkerRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWorker>>,
+        TError,
+        {id: string;data: BodyType<UpdateWorkerRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateWorkerMutationOptions(options));
     }
 
 export const getGetOrdersUrl = (params?: GetOrdersParams,) => {

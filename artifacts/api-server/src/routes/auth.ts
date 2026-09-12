@@ -29,6 +29,14 @@ router.post("/auth/login", async (req, res) => {
     res.status(401).json({ error: "Invalid username or password" });
     return;
   }
+  if (!user.isActive) {
+    res.status(403).json({ error: "This account is disabled" });
+    return;
+  }
+  if (user.role === "worker" && user.projectId !== project.id) {
+    res.status(403).json({ error: "This worker is not assigned to the selected project" });
+    return;
+  }
 
   if (!isPasswordHash(user.password)) {
     await updateUserPassword(user.id, hashPassword(password));
@@ -82,6 +90,8 @@ router.post("/auth/register", async (req, res) => {
     password: hashPassword(password),
     displayName: displayName.trim(),
     role: "customer" as const,
+    projectId: null,
+    isActive: true,
   };
   await createUser(user);
 

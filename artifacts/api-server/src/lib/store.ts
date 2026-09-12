@@ -8,6 +8,8 @@ export interface User {
   password: string;
   displayName: string;
   role: "customer" | "worker" | "admin";
+  projectId: string | null;
+  isActive: boolean;
 }
 
 export interface Order {
@@ -53,7 +55,15 @@ export const MENU_ITEMS: MenuItem[] = [
 ];
 
 function toUser(row: typeof usersTable.$inferSelect): User {
-  return { id: row.id, username: row.username, password: row.password, displayName: row.displayName, role: row.role };
+  return {
+    id: row.id,
+    username: row.username,
+    password: row.password,
+    displayName: row.displayName,
+    role: row.role,
+    projectId: row.projectId,
+    isActive: row.isActive,
+  };
 }
 
 function toOrder(row: typeof ordersTable.$inferSelect): Order {
@@ -92,9 +102,11 @@ export async function ensureSystemData(): Promise<void> {
     password,
     displayName: "المدير",
     role: "admin",
+    projectId: null,
+    isActive: true,
   }).onConflictDoUpdate({
     target: usersTable.username,
-    set: { password, role: "admin" },
+    set: { password, role: "admin", projectId: null, isActive: true },
   });
 }
 
@@ -122,7 +134,18 @@ export async function updateUserPassword(id: string, password: string): Promise<
 }
 
 export async function updateUserRole(id: string, role: User["role"]): Promise<User | undefined> {
-  const [row] = await db.update(usersTable).set({ role }).where(eq(usersTable.id, id)).returning();
+  const [row] = await db.update(usersTable)
+    .set({ role, projectId: role === "worker" ? undefined : null })
+    .where(eq(usersTable.id, id))
+    .returning();
+  return row ? toUser(row) : undefined;
+}
+
+export async function updateWorker(
+  id: string,
+  changes: Partial<Pick<User, "displayName" | "password" | "projectId" | "isActive">>,
+): Promise<User | undefined> {
+  const [row] = await db.update(usersTable).set(changes).where(eq(usersTable.id, id)).returning();
   return row ? toUser(row) : undefined;
 }
 

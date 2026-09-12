@@ -12,4 +12,9 @@ export interface AdminUser {
   username: string;
   displayName: string;
   role: AdminUserRole;
+  /** @nullable */
+  projectId: string | null;
+  /** @nullable */
+  projectName: string | null;
+  isActive: boolean;
 }

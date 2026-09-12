@@ -7,15 +7,25 @@ import {
   getOrderById,
   getOrdersByUser,
   getOrdersByStatus,
+  getUserById,
   MENU_ITEMS,
 } from "../lib/store.js";
 import { extractToken, verifyToken } from "../lib/jwt.js";
 
 const router = Router();
 
-router.get("/orders", async (req, res) => {
+async function getActiveSession(req: Parameters<typeof extractToken>[0] extends never ? never : { headers: { authorization?: string } }) {
   const token = extractToken(req.headers.authorization);
-  const user = token ? verifyToken(token) : null;
+  const session = token ? verifyToken(token) : null;
+  if (!session) return null;
+  const stored = await getUserById(session.id);
+  if (!stored?.isActive) return null;
+  if (session.role === "worker" && stored.projectId !== session.projectId) return null;
+  return session;
+}
+
+router.get("/orders", async (req, res) => {
+  const user = await getActiveSession(req);
 
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
@@ -43,8 +53,7 @@ router.get("/orders", async (req, res) => {
 });
 
 router.post("/orders", async (req, res) => {
-  const token = extractToken(req.headers.authorization);
-  const user = token ? verifyToken(token) : null;
+  const user = await getActiveSession(req);
 
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
@@ -86,8 +95,7 @@ router.post("/orders", async (req, res) => {
 });
 
 router.patch("/orders/:id/deliver", async (req, res) => {
-  const token = extractToken(req.headers.authorization);
-  const user = token ? verifyToken(token) : null;
+  const user = await getActiveSession(req);
 
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
@@ -119,8 +127,7 @@ router.patch("/orders/:id/deliver", async (req, res) => {
 });
 
 router.patch("/orders/:id/reject", async (req, res) => {
-  const token = extractToken(req.headers.authorization);
-  const user = token ? verifyToken(token) : null;
+  const user = await getActiveSession(req);
 
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
@@ -151,8 +158,7 @@ router.patch("/orders/:id/reject", async (req, res) => {
 });
 
 router.patch("/orders/:id/confirm", async (req, res) => {
-  const token = extractToken(req.headers.authorization);
-  const user = token ? verifyToken(token) : null;
+  const user = await getActiveSession(req);
 
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
