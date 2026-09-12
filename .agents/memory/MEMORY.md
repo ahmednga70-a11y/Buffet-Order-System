@@ -1,0 +1,1 @@
+- [Android APK build constraints](android-apk-build.md) — Android APKs require Expo's external build flow; this workspace lacks a local Android toolchain.
