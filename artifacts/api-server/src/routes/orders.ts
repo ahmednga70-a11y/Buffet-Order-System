@@ -4,7 +4,7 @@ import { extractToken, verifyToken } from "../lib/jwt.js";
 
 const router = Router();
 
-router.get("/orders", (req, res) => {
+router.get("/orders", async (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -18,19 +18,19 @@ router.get("/orders", (req, res) => {
 
   let orders;
   if (mine || user.role === "customer") {
-    orders = getOrdersByUser(user.id);
+    orders = await getOrdersByUser(user.id);
     if (status !== "all") {
       orders = orders.filter((o) => o.status === status);
     }
   } else {
-    orders = getOrdersByStatus(status as "pending" | "delivered" | "completed" | "all");
+    orders = await getOrdersByStatus(status as "pending" | "delivered" | "completed" | "all");
   }
 
   orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   res.json(orders);
 });
 
-router.post("/orders", (req, res) => {
+router.post("/orders", async (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -64,11 +64,11 @@ router.post("/orders", (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  createOrder(order);
-  res.status(201).json(order);
+  const created = await createOrder(order);
+  res.status(201).json(created);
 });
 
-router.patch("/orders/:id/deliver", (req, res) => {
+router.patch("/orders/:id/deliver", async (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -82,7 +82,7 @@ router.patch("/orders/:id/deliver", (req, res) => {
     return;
   }
 
-  const updated = deliverOrder(req.params["id"]);
+  const updated = await deliverOrder(req.params["id"]!);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;
@@ -91,7 +91,7 @@ router.patch("/orders/:id/deliver", (req, res) => {
   res.json(updated);
 });
 
-router.patch("/orders/:id/reject", (req, res) => {
+router.patch("/orders/:id/reject", async (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -100,7 +100,7 @@ router.patch("/orders/:id/reject", (req, res) => {
     return;
   }
 
-  const updated = rejectOrder(req.params["id"]);
+  const updated = await rejectOrder(req.params["id"]!);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;
@@ -109,7 +109,7 @@ router.patch("/orders/:id/reject", (req, res) => {
   res.json(updated);
 });
 
-router.patch("/orders/:id/confirm", (req, res) => {
+router.patch("/orders/:id/confirm", async (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -118,7 +118,7 @@ router.patch("/orders/:id/confirm", (req, res) => {
     return;
   }
 
-  const updated = confirmOrder(req.params["id"]);
+  const updated = await confirmOrder(req.params["id"]!);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;

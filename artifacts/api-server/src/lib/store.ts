@@ -1,3 +1,6 @@
+import { db, ordersTable, usersTable } from "@workspace/db";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
+
 export interface User {
   id: string;
   username: string;
@@ -41,85 +44,79 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: "milk", name: "Milk", nameAr: "لبن", category: "other", icon: "droplet" },
 ];
 
-const users = new Map<string, User>();
-const orders = new Map<string, Order>();
-
-users.set("worker", {
-  id: "worker",
-  username: "worker",
-  password: "worker123",
-  displayName: "عامل البوفيه",
-  role: "worker",
-});
-
-users.set("admin", {
-  id: "admin",
-  username: "admin",
-  password: "admin123",
-  displayName: "المدير",
-  role: "worker",
-});
-
-export function getUsers() { return users; }
-export function getOrders() { return orders; }
-
-export function getUserByUsername(username: string): User | undefined {
-  return users.get(username);
+function toUser(row: typeof usersTable.$inferSelect): User {
+  return { id: row.id, username: row.username, password: row.password, displayName: row.displayName, role: row.role };
 }
 
-export function createUser(user: User): void {
-  users.set(user.username, user);
+function toOrder(row: typeof ordersTable.$inferSelect): Order {
+  return {
+    ...row,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    deliveredAt: row.deliveredAt?.toISOString(),
+    completedAt: row.completedAt?.toISOString(),
+  };
 }
 
-export function createOrder(order: Order): void {
-  orders.set(order.id, order);
+export async function getUsers(): Promise<User[]> {
+  return (await db.select().from(usersTable)).map(toUser);
 }
 
-export function completeOrder(id: string): Order | undefined {
-  const order = orders.get(id);
-  if (!order) return undefined;
-  const updated = { ...order, status: "completed" as const, completedAt: new Date().toISOString() };
-  orders.set(id, updated);
-  return updated;
+export async function getUserByUsername(username: string): Promise<User | undefined> {
+  const [row] = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
+  return row ? toUser(row) : undefined;
 }
 
-export function getOrdersByUser(userId: string): Order[] {
-  return Array.from(orders.values()).filter((o) => o.userId === userId);
+export async function createUser(user: User): Promise<User> {
+  const [row] = await db.insert(usersTable).values(user).returning();
+  return toUser(row!);
 }
 
-export function deliverOrder(id: string): Order | undefined {
-  const order = orders.get(id);
-  if (!order) return undefined;
-  const updated = { ...order, status: "delivered" as const, deliveredAt: new Date().toISOString() };
-  orders.set(id, updated);
-  return updated;
+export async function createOrder(order: Order): Promise<Order> {
+  const [row] = await db.insert(ordersTable).values({
+    ...order,
+    createdAt: new Date(order.createdAt),
+    deliveredAt: order.deliveredAt ? new Date(order.deliveredAt) : null,
+    completedAt: order.completedAt ? new Date(order.completedAt) : null,
+  }).returning();
+  return toOrder(row!);
 }
 
-export function confirmOrder(id: string): Order | undefined {
-  const order = orders.get(id);
-  if (!order) return undefined;
-  const updated = { ...order, status: "completed" as const, completedAt: new Date().toISOString() };
-  orders.set(id, updated);
-  return updated;
+async function updateOrder(id: string, values: Partial<typeof ordersTable.$inferInsert>): Promise<Order | undefined> {
+  const [row] = await db.update(ordersTable).set(values).where(eq(ordersTable.id, id)).returning();
+  return row ? toOrder(row) : undefined;
 }
 
-export function rejectOrder(id: string): Order | undefined {
-  const order = orders.get(id);
-  if (!order) return undefined;
-  const updated = { ...order, status: "pending" as const, deliveredAt: undefined };
-  orders.set(id, updated);
-  return updated;
+export function deliverOrder(id: string) {
+  return updateOrder(id, { status: "delivered", deliveredAt: new Date() });
 }
 
-export function getOrdersByStatus(status: "pending" | "delivered" | "completed" | "all"): Order[] {
-  const all = Array.from(orders.values());
-  if (status === "all") return all;
-  return all.filter((o) => o.status === status);
+export function confirmOrder(id: string) {
+  return updateOrder(id, { status: "completed", completedAt: new Date() });
 }
 
-export function getDailyStats(date: string) {
-  const all = Array.from(orders.values());
-  const dayOrders = all.filter((o) => o.createdAt.startsWith(date));
+export function rejectOrder(id: string) {
+  return updateOrder(id, { status: "pending", deliveredAt: null });
+}
+
+export async function getOrdersByUser(userId: string): Promise<Order[]> {
+  return (await db.select().from(ordersTable).where(eq(ordersTable.userId, userId)).orderBy(desc(ordersTable.createdAt))).map(toOrder);
+}
+
+export async function getOrdersByStatus(status: "pending" | "delivered" | "completed" | "all"): Promise<Order[]> {
+  const rows = status === "all"
+    ? await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt))
+    : await db.select().from(ordersTable).where(eq(ordersTable.status, status)).orderBy(desc(ordersTable.createdAt));
+  return rows.map(toOrder);
+}
+
+export async function getDailyStats(date: string) {
+  const start = new Date(`${date}T00:00:00.000Z`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  const dayOrders = (await db.select().from(ordersTable)
+    .where(and(gte(ordersTable.createdAt, start), lt(ordersTable.createdAt, end))))
+    .map(toOrder);
 
   const byUserMap = new Map<string, { displayName: string; items: Map<string, { name: string; nameAr: string; count: number }> }>();
   const byItemMap = new Map<string, { name: string; nameAr: string; count: number }>();

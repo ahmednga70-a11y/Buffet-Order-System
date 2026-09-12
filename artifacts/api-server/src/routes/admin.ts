@@ -4,7 +4,7 @@ import { extractToken, verifyToken } from "../lib/jwt.js";
 
 const router = Router();
 
-router.get("/admin/users", (req, res) => {
+router.get("/admin/users", async (req, res) => {
   const token = extractToken(req.headers.authorization);
   const user = token ? verifyToken(token) : null;
 
@@ -13,7 +13,7 @@ router.get("/admin/users", (req, res) => {
     return;
   }
 
-  const users = Array.from(getUsers().values()).map((u) => ({
+  const users = (await getUsers()).map((u) => ({
     id: u.id,
     username: u.username,
     password: u.password,

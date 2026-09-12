@@ -4,14 +4,14 @@ import { signToken } from "../lib/jwt.js";
 
 const router = Router();
 
-router.post("/auth/login", (req, res) => {
+router.post("/auth/login", async (req, res) => {
   const { username, password } = req.body as { username: string; password: string };
   if (!username || !password) {
     res.status(400).json({ error: "Username and password are required" });
     return;
   }
 
-  const user = getUserByUsername(username);
+  const user = await getUserByUsername(username);
   if (!user || user.password !== password) {
     res.status(401).json({ error: "Invalid username or password" });
     return;
@@ -21,7 +21,7 @@ router.post("/auth/login", (req, res) => {
   res.json({ token, user: { id: user.id, username: user.username, displayName: user.displayName, role: user.role } });
 });
 
-router.post("/auth/register", (req, res) => {
+router.post("/auth/register", async (req, res) => {
   const { username, password, displayName, role } = req.body as {
     username: string;
     password: string;
@@ -34,14 +34,14 @@ router.post("/auth/register", (req, res) => {
     return;
   }
 
-  if (getUserByUsername(username)) {
+  if (await getUserByUsername(username)) {
     res.status(400).json({ error: "Username already exists" });
     return;
   }
 
   const id = Date.now().toString() + Math.random().toString(36).slice(2, 7);
   const user = { id, username, password, displayName, role };
-  createUser(user);
+  await createUser(user);
 
   const token = signToken({ id: user.id, username: user.username, displayName: user.displayName, role: user.role });
   res.status(201).json({ token, user: { id: user.id, username: user.username, displayName: user.displayName, role: user.role } });
