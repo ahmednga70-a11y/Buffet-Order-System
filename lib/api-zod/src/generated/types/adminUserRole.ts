@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
+export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
 
 
-export const RegisterRequestRole = {
+export const AdminUserRole = {
   customer: 'customer',
+  worker: 'worker',
+  admin: 'admin',
 } as const;

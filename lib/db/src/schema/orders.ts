@@ -9,6 +9,7 @@ export const ordersTable = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(() => usersTable.id),
     userDisplayName: text("user_display_name").notNull(),
+    projectId: text("project_id").notNull().default("southern-extension"),
     menuItemId: text("menu_item_id").notNull(),
     menuItemName: text("menu_item_name").notNull(),
     menuItemNameAr: text("menu_item_name_ar").notNull(),
@@ -20,6 +21,7 @@ export const ordersTable = pgTable(
   },
   (table) => [
     index("orders_user_id_idx").on(table.userId),
+    index("orders_project_id_idx").on(table.projectId),
     index("orders_status_idx").on(table.status),
     index("orders_created_at_idx").on(table.createdAt),
   ],

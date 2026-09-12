@@ -1,5 +1,14 @@
 import { Router } from "express";
-import { createOrder, deliverOrder, confirmOrder, rejectOrder, getOrdersByUser, getOrdersByStatus, MENU_ITEMS } from "../lib/store.js";
+import {
+  createOrder,
+  deliverOrder,
+  confirmOrder,
+  rejectOrder,
+  getOrderById,
+  getOrdersByUser,
+  getOrdersByStatus,
+  MENU_ITEMS,
+} from "../lib/store.js";
 import { extractToken, verifyToken } from "../lib/jwt.js";
 
 const router = Router();
@@ -18,12 +27,15 @@ router.get("/orders", async (req, res) => {
 
   let orders;
   if (mine || user.role === "customer") {
-    orders = await getOrdersByUser(user.id);
+    orders = await getOrdersByUser(user.id, user.projectId);
     if (status !== "all") {
       orders = orders.filter((o) => o.status === status);
     }
   } else {
-    orders = await getOrdersByStatus(status as "pending" | "delivered" | "completed" | "all");
+    orders = await getOrdersByStatus(
+      status as "pending" | "delivered" | "completed" | "all",
+      user.projectId,
+    );
   }
 
   orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -36,6 +48,10 @@ router.post("/orders", async (req, res) => {
 
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (user.role !== "customer") {
+    res.status(403).json({ error: "Only customers can create orders" });
     return;
   }
 
@@ -56,6 +72,7 @@ router.post("/orders", async (req, res) => {
     id,
     userId: user.id,
     userDisplayName: user.displayName,
+    projectId: user.projectId,
     menuItemId,
     menuItemName: menuItem.name,
     menuItemNameAr: menuItem.nameAr,
@@ -77,12 +94,22 @@ router.patch("/orders/:id/deliver", async (req, res) => {
     return;
   }
 
-  if (user.role !== "worker") {
+  if (user.role !== "worker" && user.role !== "admin") {
     res.status(403).json({ error: "Only workers can mark orders as delivered" });
     return;
   }
 
-  const updated = await deliverOrder(req.params["id"]!);
+  const order = await getOrderById(req.params["id"]!);
+  if (!order || order.projectId !== user.projectId) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  if (order.status !== "pending") {
+    res.status(409).json({ error: "Only pending orders can be delivered" });
+    return;
+  }
+
+  const updated = await deliverOrder(order.id);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;
@@ -99,8 +126,22 @@ router.patch("/orders/:id/reject", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (user.role !== "customer") {
+    res.status(403).json({ error: "Only customers can reject delivery" });
+    return;
+  }
 
-  const updated = await rejectOrder(req.params["id"]!);
+  const order = await getOrderById(req.params["id"]!);
+  if (!order || order.userId !== user.id || order.projectId !== user.projectId) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  if (order.status !== "delivered") {
+    res.status(409).json({ error: "Only delivered orders can be rejected" });
+    return;
+  }
+
+  const updated = await rejectOrder(order.id);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;
@@ -117,8 +158,22 @@ router.patch("/orders/:id/confirm", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (user.role !== "customer") {
+    res.status(403).json({ error: "Only customers can confirm delivery" });
+    return;
+  }
 
-  const updated = await confirmOrder(req.params["id"]!);
+  const order = await getOrderById(req.params["id"]!);
+  if (!order || order.userId !== user.id || order.projectId !== user.projectId) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  if (order.status !== "delivered") {
+    res.status(409).json({ error: "Only delivered orders can be confirmed" });
+    return;
+  }
+
+  const updated = await confirmOrder(order.id);
   if (!updated) {
     res.status(404).json({ error: "Order not found" });
     return;

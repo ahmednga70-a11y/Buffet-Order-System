@@ -1,7 +1,7 @@
-import { useLogin } from "@workspace/api-client-react";
+import { useGetProjects, useLogin } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,27 +16,34 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import colors from "@/constants/colors";
+import { ProjectSelector } from "@/components/ProjectSelector";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const loginMutation = useLogin();
+  const { data: projects, isLoading: projectsLoading } = useGetProjects();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [projectId, setProjectId] = useState("");
+
+  useEffect(() => {
+    if (!projectId && projects?.[0]) setProjectId(projects[0].id);
+  }, [projectId, projects]);
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert("خطأ", "من فضلك أدخل اسم المستخدم وكلمة المرور");
+    if (!projectId || !username.trim() || !password.trim()) {
+      Alert.alert("خطأ", "من فضلك اختر المشروع وأدخل بيانات الدخول");
       return;
     }
 
     try {
-      const result = await loginMutation.mutateAsync({ data: { username: username.trim(), password } });
-      const authUser = result.user as { id: string; username: string; displayName: string; role: "customer" | "worker" };
+      const result = await loginMutation.mutateAsync({ data: { username: username.trim(), password, projectId } });
+      const authUser = result.user;
       await login(authUser, result.token);
-      router.replace(authUser.role === "worker" ? "/(worker)" : "/(customer)");
+      router.replace(authUser.role === "customer" ? "/(customer)" : "/(worker)");
     } catch {
       Alert.alert("خطأ", "اسم المستخدم أو كلمة المرور غلط");
     }
@@ -57,6 +64,12 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
+          <ProjectSelector
+            projects={projects}
+            selectedId={projectId}
+            onSelect={setProjectId}
+            loading={projectsLoading}
+          />
           <View style={styles.inputGroup}>
             <Text style={styles.label}>اسم المستخدم</Text>
             <TextInput
@@ -101,7 +114,10 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          <Pressable style={styles.registerLink} onPress={() => router.push("/register")}>
+          <Pressable
+            style={styles.registerLink}
+            onPress={() => router.push({ pathname: "/register", params: { projectId } })}
+          >
             <Text style={styles.registerLinkText}>مش عندك حساب؟ سجل هنا</Text>
           </Pressable>
         </View>

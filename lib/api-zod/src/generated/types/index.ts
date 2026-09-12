@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminUser';
+export * from './adminUserRole';
 export * from './authResponse';
 export * from './createOrderRequest';
+export * from './createProjectRequest';
 export * from './dailyStats';
 export * from './errorResponse';
 export * from './getOrdersParams';
@@ -19,8 +22,11 @@ export * from './menuItem';
 export * from './menuItemCategory';
 export * from './order';
 export * from './orderStatus';
+export * from './project';
 export * from './registerRequest';
 export * from './registerRequestRole';
+export * from './updateUserRoleRequest';
+export * from './updateUserRoleRequestRole';
 export * from './user';
 export * from './userItemStat';
 export * from './userRole';

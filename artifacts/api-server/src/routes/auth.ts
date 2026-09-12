@@ -1,50 +1,100 @@
 import { Router } from "express";
-import { createUser, getUserByUsername } from "../lib/store.js";
+import { createUser, getProjectById, getUserByUsername, updateUserPassword } from "../lib/store.js";
 import { signToken } from "../lib/jwt.js";
+import { hashPassword, isPasswordHash, verifyPassword } from "../lib/password.js";
 
 const router = Router();
 
 router.post("/auth/login", async (req, res) => {
-  const { username, password } = req.body as { username: string; password: string };
-  if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required" });
+  const { username, password, projectId } = req.body as { username: string; password: string; projectId: string };
+  if (!username || !password || !projectId) {
+    res.status(400).json({ error: "Username, password and project are required" });
     return;
   }
 
-  const user = await getUserByUsername(username);
-  if (!user || user.password !== password) {
+  const [user, project] = await Promise.all([
+    getUserByUsername(username.trim().toLowerCase()),
+    getProjectById(projectId),
+  ]);
+  if (!project) {
+    res.status(400).json({ error: "Invalid project" });
+    return;
+  }
+
+  const passwordMatches = user && (
+    verifyPassword(password, user.password) ||
+    (!isPasswordHash(user.password) && user.password === password)
+  );
+  if (!user || !passwordMatches) {
     res.status(401).json({ error: "Invalid username or password" });
     return;
   }
 
-  const token = signToken({ id: user.id, username: user.username, displayName: user.displayName, role: user.role });
-  res.json({ token, user: { id: user.id, username: user.username, displayName: user.displayName, role: user.role } });
+  if (!isPasswordHash(user.password)) {
+    await updateUserPassword(user.id, hashPassword(password));
+  }
+
+  const sessionUser = {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role,
+    projectId: project.id,
+    projectName: project.name,
+  };
+  const token = signToken(sessionUser);
+  res.json({ token, user: sessionUser });
 });
 
 router.post("/auth/register", async (req, res) => {
-  const { username, password, displayName, role } = req.body as {
+  const { username, password, displayName, projectId } = req.body as {
     username: string;
     password: string;
     displayName: string;
-    role: "customer" | "worker";
+    role: "customer";
+    projectId: string;
   };
 
-  if (!username || !password || !displayName || !role) {
+  if (!username || !password || !displayName || !projectId) {
     res.status(400).json({ error: "All fields are required" });
     return;
   }
+  if (password.length < 8) {
+    res.status(400).json({ error: "Password must be at least 8 characters" });
+    return;
+  }
 
-  if (await getUserByUsername(username)) {
+  const normalizedUsername = username.trim().toLowerCase();
+  const project = await getProjectById(projectId);
+  if (!project) {
+    res.status(400).json({ error: "Invalid project" });
+    return;
+  }
+  if (await getUserByUsername(normalizedUsername)) {
     res.status(400).json({ error: "Username already exists" });
     return;
   }
 
   const id = Date.now().toString() + Math.random().toString(36).slice(2, 7);
-  const user = { id, username, password, displayName, role };
+  const user = {
+    id,
+    username: normalizedUsername,
+    password: hashPassword(password),
+    displayName: displayName.trim(),
+    role: "customer" as const,
+  };
   await createUser(user);
 
-  const token = signToken({ id: user.id, username: user.username, displayName: user.displayName, role: user.role });
-  res.status(201).json({ token, user: { id: user.id, username: user.username, displayName: user.displayName, role: user.role } });
+  const sessionUser = {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role,
+    projectId: project.id,
+    projectName: project.name,
+  };
+  const token = signToken(sessionUser);
+  res.status(201).json({ token, user: sessionUser });
 });
 
 export default router;

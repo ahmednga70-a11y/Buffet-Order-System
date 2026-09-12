@@ -11,6 +11,7 @@ export interface Order {
   id: string;
   userId: string;
   userDisplayName: string;
+  projectId: string;
   menuItemId: string;
   menuItemName: string;
   menuItemNameAr: string;

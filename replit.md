@@ -14,7 +14,7 @@
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5 + JWT auth (jsonwebtoken)
-- DB: In-memory store (no database needed)
+- DB: Replit PostgreSQL via Drizzle ORM
 - Mobile: Expo + React Native + Expo Router
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
@@ -24,7 +24,7 @@
 
 - `lib/api-spec/openapi.yaml` — API contract (source of truth)
 - `lib/api-client-react/src/generated/` — generated hooks & schemas (do not edit)
-- `artifacts/api-server/src/lib/store.ts` — in-memory users & orders store
+- `artifacts/api-server/src/lib/store.ts` — PostgreSQL-backed users, projects, and orders store
 - `artifacts/api-server/src/lib/jwt.ts` — JWT sign/verify helpers
 - `artifacts/api-server/src/routes/` — auth, orders, stats, menu route handlers
 - `artifacts/mobile/app/` — all Expo screens
@@ -33,11 +33,14 @@
 
 ## Architecture decisions
 
-- **In-memory store**: No database provisioned — data lives in server RAM. Restarting the API server resets all orders. Good for a first build.
+- **Persistent store**: Users, projects, and orders are stored in PostgreSQL.
+- **Project scoping**: Every login selects a project; orders and statistics are isolated to that project.
+- **Roles**: Customers place and confirm their own orders, workers deliver orders, and admins manage projects and user roles.
+- **Admin credentials**: The primary `admin` password comes from `ADMIN_INITIAL_PASSWORD` and is never stored in source code.
 - **JWT auth**: Tokens stored in AsyncStorage on the device, sent as Bearer header on every API call via `setAuthTokenGetter`.
 - **Worker notifications via polling**: Worker screen polls every 5 seconds for new pending orders. Haptic feedback fires when a new order arrives.
 - **Role-based routing**: After login, the app redirects to `/(customer)` or `/(worker)` based on JWT role.
-- **Default worker account**: `worker` / `worker123` and `admin` / `admin123` pre-seeded.
+- **Primary admin account**: Username `admin`; password is supplied through the `ADMIN_INITIAL_PASSWORD` secret.
 
 ## Product
 
@@ -51,7 +54,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-- Restarting the API server clears all in-memory orders and users (except pre-seeded worker accounts).
+- The primary admin cannot be demoted. Additional admins can be promoted from the admin management screen.
 - After any OpenAPI spec change, always run `pnpm --filter @workspace/api-spec run codegen` before using the new hooks.
 - Worker accounts can be registered via the Register screen (choose "عامل بوفيه" role).
 

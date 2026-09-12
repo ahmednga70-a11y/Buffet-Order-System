@@ -12,6 +12,7 @@ export interface HealthStatus {
 export interface LoginRequest {
   username: string;
   password: string;
+  projectId: string;
 }
 
 export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
@@ -19,7 +20,6 @@ export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof Regist
 
 export const RegisterRequestRole = {
   customer: 'customer',
-  worker: 'worker',
 } as const;
 
 export interface RegisterRequest {
@@ -27,6 +27,7 @@ export interface RegisterRequest {
   password: string;
   displayName: string;
   role: RegisterRequestRole;
+  projectId: string;
 }
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -35,6 +36,7 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 export const UserRole = {
   customer: 'customer',
   worker: 'worker',
+  admin: 'admin',
 } as const;
 
 export interface User {
@@ -42,11 +44,52 @@ export interface User {
   username: string;
   displayName: string;
   role: UserRole;
+  projectId: string;
+  projectName: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+}
+
+export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
+
+
+export const AdminUserRole = {
+  customer: 'customer',
+  worker: 'worker',
+  admin: 'admin',
+} as const;
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  displayName: string;
+  role: AdminUserRole;
+}
+
+export type UpdateUserRoleRequestRole = typeof UpdateUserRoleRequestRole[keyof typeof UpdateUserRoleRequestRole];
+
+
+export const UpdateUserRoleRequestRole = {
+  customer: 'customer',
+  worker: 'worker',
+  admin: 'admin',
+} as const;
+
+export interface UpdateUserRoleRequest {
+  role: UpdateUserRoleRequestRole;
 }
 
 export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
@@ -62,6 +105,7 @@ export interface Order {
   id: string;
   userId: string;
   userDisplayName: string;
+  projectId: string;
   menuItemId: string;
   menuItemName: string;
   menuItemNameAr: string;

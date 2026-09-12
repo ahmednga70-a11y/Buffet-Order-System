@@ -7,8 +7,9 @@ import { SymbolView } from "expo-symbols";
 import React from "react";
 import { Platform, StyleSheet, useColorScheme } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
 
-function NativeTabLayout() {
+function NativeTabLayout({ isAdmin }: { isAdmin: boolean }) {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -23,15 +24,17 @@ function NativeTabLayout() {
         <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
         <Label>إحصائيات</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="users">
-        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
-        <Label>المستخدمون</Label>
-      </NativeTabs.Trigger>
+      {isAdmin && (
+        <NativeTabs.Trigger name="users">
+          <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+          <Label>الإدارة</Label>
+        </NativeTabs.Trigger>
+      )}
     </NativeTabs>
   );
 }
 
-function ClassicTabLayout() {
+function ClassicTabLayout({ isAdmin }: { isAdmin: boolean }) {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -97,7 +100,8 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="users"
         options={{
-          title: "المستخدمون",
+          href: isAdmin ? undefined : null,
+          title: "الإدارة",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="person.2" tintColor={color} size={24} />
@@ -111,6 +115,8 @@ function ClassicTabLayout() {
 }
 
 export default function WorkerTabLayout() {
-  if (isLiquidGlassAvailable()) return <NativeTabLayout />;
-  return <ClassicTabLayout />;
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  if (isLiquidGlassAvailable()) return <NativeTabLayout isAdmin={isAdmin} />;
+  return <ClassicTabLayout isAdmin={isAdmin} />;
 }

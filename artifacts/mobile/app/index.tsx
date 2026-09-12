@@ -16,6 +16,6 @@ export default function IndexScreen() {
   }
 
   if (!user) return <Redirect href="/login" />;
-  if (user.role === "worker") return <Redirect href="/(worker)" />;
+  if (user.role === "worker" || user.role === "admin") return <Redirect href="/(worker)" />;
   return <Redirect href="/(customer)" />;
 }

@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-  projectId: string;
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
 }

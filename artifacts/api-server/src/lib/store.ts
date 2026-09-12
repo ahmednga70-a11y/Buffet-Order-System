@@ -1,18 +1,20 @@
-import { db, ordersTable, usersTable } from "@workspace/db";
+import { db, ordersTable, projectsTable, usersTable } from "@workspace/db";
 import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { hashPassword } from "./password.js";
 
 export interface User {
   id: string;
   username: string;
   password: string;
   displayName: string;
-  role: "customer" | "worker";
+  role: "customer" | "worker" | "admin";
 }
 
 export interface Order {
   id: string;
   userId: string;
   userDisplayName: string;
+  projectId: string;
   menuItemId: string;
   menuItemName: string;
   menuItemNameAr: string;
@@ -29,6 +31,12 @@ export interface MenuItem {
   nameAr: string;
   category: "hot" | "cold" | "juice" | "other";
   icon: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export const MENU_ITEMS: MenuItem[] = [
@@ -58,6 +66,38 @@ function toOrder(row: typeof ordersTable.$inferSelect): Order {
   };
 }
 
+function toProject(row: typeof projectsTable.$inferSelect): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export async function ensureSystemData(): Promise<void> {
+  await db.insert(projectsTable).values([
+    { id: "southern-extension", name: "الامتداد الجنوبي" },
+    { id: "new-obour", name: "العبور الجديدة" },
+  ]).onConflictDoNothing();
+
+  const adminPassword = process.env["ADMIN_INITIAL_PASSWORD"];
+  if (!adminPassword) {
+    throw new Error("ADMIN_INITIAL_PASSWORD is required");
+  }
+
+  const password = hashPassword(adminPassword);
+  await db.insert(usersTable).values({
+    id: "admin",
+    username: "admin",
+    password,
+    displayName: "المدير",
+    role: "admin",
+  }).onConflictDoUpdate({
+    target: usersTable.username,
+    set: { password, role: "admin" },
+  });
+}
+
 export async function getUsers(): Promise<User[]> {
   return (await db.select().from(usersTable)).map(toUser);
 }
@@ -67,9 +107,41 @@ export async function getUserByUsername(username: string): Promise<User | undefi
   return row ? toUser(row) : undefined;
 }
 
+export async function getUserById(id: string): Promise<User | undefined> {
+  const [row] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  return row ? toUser(row) : undefined;
+}
+
 export async function createUser(user: User): Promise<User> {
   const [row] = await db.insert(usersTable).values(user).returning();
   return toUser(row!);
+}
+
+export async function updateUserPassword(id: string, password: string): Promise<void> {
+  await db.update(usersTable).set({ password }).where(eq(usersTable.id, id));
+}
+
+export async function updateUserRole(id: string, role: User["role"]): Promise<User | undefined> {
+  const [row] = await db.update(usersTable).set({ role }).where(eq(usersTable.id, id)).returning();
+  return row ? toUser(row) : undefined;
+}
+
+export async function getProjects(): Promise<Project[]> {
+  return (await db.select().from(projectsTable).orderBy(projectsTable.createdAt)).map(toProject);
+}
+
+export async function getProjectById(id: string): Promise<Project | undefined> {
+  const [row] = await db.select().from(projectsTable).where(eq(projectsTable.id, id)).limit(1);
+  return row ? toProject(row) : undefined;
+}
+
+export async function createProject(project: Project): Promise<Project> {
+  const [row] = await db.insert(projectsTable).values({
+    id: project.id,
+    name: project.name,
+    createdAt: new Date(project.createdAt),
+  }).returning();
+  return toProject(row!);
 }
 
 export async function createOrder(order: Order): Promise<Order> {
@@ -99,23 +171,39 @@ export function rejectOrder(id: string) {
   return updateOrder(id, { status: "pending", deliveredAt: null });
 }
 
-export async function getOrdersByUser(userId: string): Promise<Order[]> {
-  return (await db.select().from(ordersTable).where(eq(ordersTable.userId, userId)).orderBy(desc(ordersTable.createdAt))).map(toOrder);
+export async function getOrderById(id: string): Promise<Order | undefined> {
+  const [row] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  return row ? toOrder(row) : undefined;
 }
 
-export async function getOrdersByStatus(status: "pending" | "delivered" | "completed" | "all"): Promise<Order[]> {
+export async function getOrdersByUser(userId: string, projectId: string): Promise<Order[]> {
+  return (await db.select().from(ordersTable)
+    .where(and(eq(ordersTable.userId, userId), eq(ordersTable.projectId, projectId)))
+    .orderBy(desc(ordersTable.createdAt))).map(toOrder);
+}
+
+export async function getOrdersByStatus(
+  status: "pending" | "delivered" | "completed" | "all",
+  projectId: string,
+): Promise<Order[]> {
   const rows = status === "all"
-    ? await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt))
-    : await db.select().from(ordersTable).where(eq(ordersTable.status, status)).orderBy(desc(ordersTable.createdAt));
+    ? await db.select().from(ordersTable).where(eq(ordersTable.projectId, projectId)).orderBy(desc(ordersTable.createdAt))
+    : await db.select().from(ordersTable)
+      .where(and(eq(ordersTable.status, status), eq(ordersTable.projectId, projectId)))
+      .orderBy(desc(ordersTable.createdAt));
   return rows.map(toOrder);
 }
 
-export async function getDailyStats(date: string) {
+export async function getDailyStats(date: string, projectId: string) {
   const start = new Date(`${date}T00:00:00.000Z`);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
   const dayOrders = (await db.select().from(ordersTable)
-    .where(and(gte(ordersTable.createdAt, start), lt(ordersTable.createdAt, end))))
+    .where(and(
+      gte(ordersTable.createdAt, start),
+      lt(ordersTable.createdAt, end),
+      eq(ordersTable.projectId, projectId),
+    )))
     .map(toOrder);
 
   const byUserMap = new Map<string, { displayName: string; items: Map<string, { name: string; nameAr: string; count: number }> }>();

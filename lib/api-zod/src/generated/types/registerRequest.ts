@@ -12,4 +12,5 @@ export interface RegisterRequest {
   password: string;
   displayName: string;
   role: RegisterRequestRole;
+  projectId: string;
 }

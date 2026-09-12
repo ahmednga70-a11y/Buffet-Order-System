@@ -1,7 +1,7 @@
-import { useRegister } from "@workspace/api-client-react";
+import { useGetProjects, useRegister } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,35 +17,42 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import colors from "@/constants/colors";
+import { ProjectSelector } from "@/components/ProjectSelector";
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const registerMutation = useRegister();
+  const params = useLocalSearchParams<{ projectId?: string }>();
+  const { data: projects, isLoading: projectsLoading } = useGetProjects();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<"customer" | "worker">("customer");
   const [showPassword, setShowPassword] = useState(false);
+  const [projectId, setProjectId] = useState(params.projectId ?? "");
+
+  useEffect(() => {
+    if (!projectId && projects?.[0]) setProjectId(projects[0].id);
+  }, [projectId, projects]);
 
   const handleRegister = async () => {
-    if (!username.trim() || !password.trim() || !displayName.trim()) {
+    if (!projectId || !username.trim() || !password.trim() || !displayName.trim()) {
       Alert.alert("خطأ", "من فضلك أدخل كل البيانات");
       return;
     }
-    if (password.length < 4) {
-      Alert.alert("خطأ", "كلمة المرور لازم تكون 4 حروف على الأقل");
+    if (password.length < 8) {
+      Alert.alert("خطأ", "كلمة المرور لازم تكون 8 أحرف على الأقل");
       return;
     }
 
     try {
       const result = await registerMutation.mutateAsync({
-        data: { username: username.trim(), password, displayName: displayName.trim(), role },
+        data: { username: username.trim(), password, displayName: displayName.trim(), role: "customer", projectId },
       });
-      const authUser = result.user as { id: string; username: string; displayName: string; role: "customer" | "worker" };
+      const authUser = result.user;
       await login(authUser, result.token);
-      router.replace(authUser.role === "worker" ? "/(worker)" : "/(customer)");
+      router.replace(authUser.role === "customer" ? "/(customer)" : "/(worker)");
     } catch (err: unknown) {
       let message = "حصل خطأ، حاول تاني";
       if (err && typeof err === "object") {
@@ -82,6 +89,12 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.form}>
+          <ProjectSelector
+            projects={projects}
+            selectedId={projectId}
+            onSelect={setProjectId}
+            loading={projectsLoading}
+          />
           <View style={styles.inputGroup}>
             <Text style={styles.label}>اسمك</Text>
             <TextInput
@@ -113,7 +126,7 @@ export default function RegisterScreen() {
             <View style={styles.passwordRow}>
               <TextInput
                 style={[styles.input, styles.passwordInput]}
-                placeholder="4 أحرف على الأقل"
+                placeholder="8 أحرف على الأقل"
                 placeholderTextColor={colors.light.mutedForeground}
                 value={password}
                 onChangeText={setPassword}
@@ -122,28 +135,6 @@ export default function RegisterScreen() {
               />
               <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
                 <Feather name={showPassword ? "eye-off" : "eye"} size={20} color={colors.light.mutedForeground} />
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>أنت</Text>
-            <View style={styles.roleRow}>
-              <Pressable
-                style={[styles.roleBtn, role === "customer" && styles.roleBtnActive]}
-                onPress={() => setRole("customer")}
-              >
-                <Text style={[styles.roleBtnText, role === "customer" && styles.roleBtnTextActive]}>
-                  موظف (طالب)
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[styles.roleBtn, role === "worker" && styles.roleBtnActive]}
-                onPress={() => setRole("worker")}
-              >
-                <Text style={[styles.roleBtnText, role === "worker" && styles.roleBtnTextActive]}>
-                  عامل بوفيه
-                </Text>
               </Pressable>
             </View>
           </View>

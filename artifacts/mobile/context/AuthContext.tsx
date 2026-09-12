@@ -20,7 +20,9 @@ interface AuthUser {
   id: string;
   username: string;
   displayName: string;
-  role: "customer" | "worker";
+  role: "customer" | "worker" | "admin";
+  projectId: string;
+  projectName: string;
 }
 
 interface AuthContextValue {

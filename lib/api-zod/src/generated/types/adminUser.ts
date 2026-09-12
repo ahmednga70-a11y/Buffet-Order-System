@@ -5,13 +5,11 @@
  * Buffet Orders API
  * OpenAPI spec version: 0.1.0
  */
-import type { UserRole } from './userRole';
+import type { AdminUserRole } from './adminUserRole';
 
-export interface User {
+export interface AdminUser {
   id: string;
   username: string;
   displayName: string;
-  role: UserRole;
-  projectId: string;
-  projectName: string;
+  role: AdminUserRole;
 }

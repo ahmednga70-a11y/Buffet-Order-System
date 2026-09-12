@@ -14,7 +14,7 @@ router.get("/stats/daily", async (req, res) => {
   }
 
   const dateParam = (req.query["date"] as string) || new Date().toISOString().slice(0, 10);
-  const stats = await getDailyStats(dateParam);
+  const stats = await getDailyStats(dateParam, user.projectId);
   res.json(stats);
 });
 

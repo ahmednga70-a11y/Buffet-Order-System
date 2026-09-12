@@ -18,6 +18,10 @@ tags:
     description: Statistics operations
   - name: menu
     description: Menu operations
+  - name: projects
+    description: Project selection
+  - name: admin
+    description: Administrator operations
 paths:
   /healthz:
     get:
@@ -77,6 +81,104 @@ paths:
                 $ref: "#/components/schemas/AuthResponse"
         "400":
           description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects:
+    get:
+      operationId: getProjects
+      tags: [projects]
+      summary: Get projects available for login and registration
+      responses:
+        "200":
+          description: Available projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+
+  /admin/projects:
+    post:
+      operationId: createProject
+      tags: [admin]
+      summary: Add a project (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "403":
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: List users without passwords (admin only)
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "403":
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users/{id}/role:
+    patch:
+      operationId: updateUserRole
+      tags: [admin]
+      summary: Change a user's role (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleRequest"
+      responses:
+        "200":
+          description: User role updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Invalid role change
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin only
           content:
             application/json:
               schema:
@@ -244,9 +346,12 @@ components:
           type: string
         password:
           type: string
+        projectId:
+          type: string
       required:
         - username
         - password
+        - projectId
 
     RegisterRequest:
       type: object
@@ -259,12 +364,15 @@ components:
           type: string
         role:
           type: string
-          enum: [customer, worker]
+          enum: [customer]
+        projectId:
+          type: string
       required:
         - username
         - password
         - displayName
         - role
+        - projectId
 
     AuthResponse:
       type: object
@@ -288,11 +396,66 @@ components:
           type: string
         role:
           type: string
-          enum: [customer, worker]
+          enum: [customer, worker, admin]
+        projectId:
+          type: string
+        projectName:
+          type: string
       required:
         - id
         - username
         - displayName
+        - role
+        - projectId
+        - projectName
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - createdAt
+
+    CreateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [customer, worker, admin]
+      required:
+        - id
+        - username
+        - displayName
+        - role
+
+    UpdateUserRoleRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [customer, worker, admin]
+      required:
         - role
 
     Order:
@@ -303,6 +466,8 @@ components:
         userId:
           type: string
         userDisplayName:
+          type: string
+        projectId:
           type: string
         menuItemId:
           type: string
@@ -323,6 +488,7 @@ components:
         - id
         - userId
         - userDisplayName
+        - projectId
         - menuItemId
         - menuItemName
         - menuItemNameAr

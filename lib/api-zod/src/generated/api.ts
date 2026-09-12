@@ -21,7 +21,8 @@ export const HealthCheckResponse = zod.object({
  */
 export const LoginBody = zod.object({
   "username": zod.string(),
-  "password": zod.string()
+  "password": zod.string(),
+  "projectId": zod.string()
 })
 
 export const LoginResponse = zod.object({
@@ -30,7 +31,9 @@ export const LoginResponse = zod.object({
   "id": zod.string(),
   "username": zod.string(),
   "displayName": zod.string(),
-  "role": zod.enum(['customer', 'worker'])
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string(),
+  "projectName": zod.string()
 })
 })
 
@@ -42,7 +45,8 @@ export const RegisterBody = zod.object({
   "username": zod.string(),
   "password": zod.string(),
   "displayName": zod.string(),
-  "role": zod.enum(['customer', 'worker'])
+  "role": zod.enum(['customer']),
+  "projectId": zod.string()
 })
 
 export const RegisterResponse = zod.object({
@@ -51,8 +55,66 @@ export const RegisterResponse = zod.object({
   "id": zod.string(),
   "username": zod.string(),
   "displayName": zod.string(),
-  "role": zod.enum(['customer', 'worker'])
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string(),
+  "projectName": zod.string()
 })
+})
+
+
+/**
+ * @summary Get projects available for login and registration
+ */
+export const GetProjectsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string()
+})
+export const GetProjectsResponse = zod.array(GetProjectsResponseItem)
+
+
+/**
+ * @summary Add a project (admin only)
+ */
+export const CreateProjectBody = zod.object({
+  "name": zod.string()
+})
+
+export const CreateProjectResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List users without passwords (admin only)
+ */
+export const GetAdminUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['customer', 'worker', 'admin'])
+})
+export const GetAdminUsersResponse = zod.array(GetAdminUsersResponseItem)
+
+
+/**
+ * @summary Change a user's role (admin only)
+ */
+export const UpdateUserRoleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateUserRoleBody = zod.object({
+  "role": zod.enum(['customer', 'worker', 'admin'])
+})
+
+export const UpdateUserRoleResponse = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['customer', 'worker', 'admin'])
 })
 
 
@@ -68,6 +130,7 @@ export const GetOrdersResponseItem = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "userDisplayName": zod.string(),
+  "projectId": zod.string(),
   "menuItemId": zod.string(),
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
@@ -91,6 +154,7 @@ export const CreateOrderResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "userDisplayName": zod.string(),
+  "projectId": zod.string(),
   "menuItemId": zod.string(),
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
@@ -112,6 +176,7 @@ export const DeliverOrderResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "userDisplayName": zod.string(),
+  "projectId": zod.string(),
   "menuItemId": zod.string(),
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
@@ -133,6 +198,7 @@ export const RejectOrderResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "userDisplayName": zod.string(),
+  "projectId": zod.string(),
   "menuItemId": zod.string(),
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
@@ -154,6 +220,7 @@ export const ConfirmOrderResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "userDisplayName": zod.string(),
+  "projectId": zod.string(),
   "menuItemId": zod.string(),
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
