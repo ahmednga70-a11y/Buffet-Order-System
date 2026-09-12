@@ -22,6 +22,9 @@
     "web": {
       "favicon": "./assets/images/icon.png"
     },
+    "extra": {
+      "apiBaseUrl": "https://buffet-order-system.replit.app"
+    },
     "plugins": [
       [
         "expo-router",

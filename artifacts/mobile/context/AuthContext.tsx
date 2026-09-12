@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
+import Constants from "expo-constants";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 // Module-level token — the getter is registered once and always reads from here
@@ -13,7 +14,7 @@ const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL
   ? process.env.EXPO_PUBLIC_API_URL
   : process.env.EXPO_PUBLIC_DOMAIN
     ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-    : null;
+    : (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ?? null;
 setBaseUrl(apiBaseUrl);
 
 interface AuthUser {
