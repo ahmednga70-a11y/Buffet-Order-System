@@ -15,11 +15,11 @@ Validate the complete source graph from the Vercel entry under NodeNext, without
 
 **How to apply:** Use explicit `.js` relative imports and explicit directory entry paths in server-side ESM source. Run the standalone entry check with strict null checking and implicit-any checking enabled before handing off deployment changes. Prefer an explicit runtime-schema package entry over traversing generated type barrels from server code; do not hand-edit generated files.
 
-Preserve inferred types from Express application and router factories instead of adding explicit `Express` or `IRouter` wrapper annotations.
+Keep the Vercel function entry as source-controlled JavaScript and bundle the server separately, while retaining an explicit TypeScript check in the build.
 
-**Why:** The external Vercel build reported missing inherited callable signatures, router methods, and JSON response methods for explicit Express wrapper types while local checks passed.
+**Why:** Vercel's TypeScript compilation repeatedly rejected Express types that the project's own checks accepted, moving the failure between routes after individual patches. The official Node runtime documentation states that Vercel does not support TypeScript project references used by this monorepo. A checked, self-contained JavaScript bundle avoids that second compilation boundary without weakening source type checking.
 
-**How to apply:** Let factory return types flow through server exports. For small protocol-only endpoints, use native Node HTTP request/response types rather than explicitly widening to Express wrapper interfaces. Preserve status, content type, and body behavior. Do not introduce `any` or casts to suppress deployment errors.
+**How to apply:** Preserve the JavaScript deployment entry and the separate checked bundle build. The entry must exist before Vercel discovers functions; only its bundle is generated. Verify that the packaged entry loads without workspace TypeScript or local dependencies, and keep generated output ignored. Do not restore a TypeScript function entry or suppress source errors with `any` or casts.
 
 Before changing code for a reported build failure, compare the revision cloned in the Vercel log with the actual source at that revision.
 

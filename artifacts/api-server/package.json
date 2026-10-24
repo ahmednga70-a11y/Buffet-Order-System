@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
+    "build:vercel": "pnpm run typecheck:vercel && node ./build-vercel.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:vercel": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target es2022 --esModuleInterop --skipLibCheck --noImplicitAny --strictNullChecks ../../api/index.ts"
+    "typecheck:vercel": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target es2022 --esModuleInterop --skipLibCheck --noImplicitAny --strictNullChecks src/vercel-entry.ts"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.10",

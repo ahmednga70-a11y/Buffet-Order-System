@@ -2,7 +2,9 @@
 
 Deploy this repository as one Vercel project with **Root Directory = repository root** (the directory containing `vercel.json`, `api/`, and `pnpm-workspace.yaml`), not `artifacts/mobile`.
 
-The root `api/index.ts` is a source-controlled Vercel Function. The frontend build exports Expo web to `artifacts/mobile/dist`. Requests under `/api/` are routed to Express; other frontend routes load the exported app.
+The root `api/index.js` is a source-controlled CommonJS Vercel Function. Before exporting Expo web to `artifacts/mobile/dist`, the build runs `pnpm --filter @workspace/api-server run build:vercel`. This checks the complete server source graph with TypeScript, then bundles it into `artifacts/api-server/dist-vercel/handler.cjs`. Vercel includes that bundle explicitly and does not need to recompile the workspace's TypeScript sources using its separate compiler. Keep the generated bundle out of Git; it is created during every deployment build.
+
+Requests under `/api/` are routed to Express; other frontend routes load the exported app. The JavaScript function entry must be committed, not generated during the build, so Vercel can discover it in advance. Do not keep an old `api/index.ts` alongside it.
 
 ## Required production environment variables in Vercel
 
