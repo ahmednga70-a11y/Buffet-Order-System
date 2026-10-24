@@ -14,3 +14,9 @@ Validate server imports under NodeNext as well as the workspace's bundler config
 **Why:** The bundler-based check accepted extensionless ESM imports that Vercel's compiler rejected. Bundling successfully alone did not establish deployment compatibility.
 
 **How to apply:** Use explicit `.js` relative imports and explicit directory entry paths in server-side ESM source, and run a NodeNext type check before handing off Vercel deployment changes.
+
+Preserve inferred types from Express application and router factories instead of adding explicit `Express` or `IRouter` wrapper annotations.
+
+**Why:** The external Vercel build reported missing inherited callable signatures and router methods for these explicit wrapper types while local checks passed.
+
+**How to apply:** Let factory return types flow through server exports; type HTTP request and response parameters directly where needed. Do not introduce `any` or casts to suppress the deployment errors.
