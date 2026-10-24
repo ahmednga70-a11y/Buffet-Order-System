@@ -128,6 +128,15 @@ test("push configuration is worker-only, stable, encrypted and rejects unsafe en
   const ecdh = createECDH("prime256v1");
   const p256dh = ecdh.generateKeys().toString("base64url");
   const originalSend = webpush.sendNotification;
+  const originalFetch = globalThis.fetch;
+  const expoMessages: { sound: string; channelId: string }[] = [];
+  globalThis.fetch = async (input, init) => {
+    if (String(input) === "https://exp.host/--/api/v2/push/send") {
+      expoMessages.push(JSON.parse(String(init?.body)));
+      return new Response(JSON.stringify({ data: { status: "ok" } }), { status: 200 });
+    }
+    return originalFetch(input, init);
+  };
   const sent: string[] = [];
   webpush.sendNotification = async (_subscription, payload) => {
     sent.push(String(payload));
@@ -139,6 +148,9 @@ test("push configuration is worker-only, stable, encrypted and rejects unsafe en
       p256dh, auth: randomBytes(16).toString("base64url"),
     });
     assert.equal(registered.status, 200);
+    assert.equal((await request("/notifications/devices", tokens.worker, "POST", {
+      platform: "expo", token: `ExpoPushToken[mocked-sound-${suffix}]`,
+    })).status, 200);
     const menu = await (await request("/menu")).json() as { id: string }[];
     const crossToken = await login("customer", projectB);
     await request("/orders", crossToken, "POST", { menuItemId: menu[0]!.id });
@@ -150,7 +162,13 @@ test("push configuration is worker-only, stable, encrypted and rejects unsafe en
     await request(`/orders/${order.id}/urgent`, tokens.customer, "PATCH");
     assert.equal(sent.length, 2, "urgency sends exactly once even with concurrent taps");
     assert.equal(sent.some((payload) => payload.includes("private-test-note") || payload.includes("Test customer")), false);
+    assert.equal(expoMessages.length, 2, "both new-order and urgent events include the native bell");
+    for (const message of expoMessages) {
+      assert.equal(message.sound, "door_bell.mp3");
+      assert.equal(message.channelId, "orders-doorbell-v1");
+    }
   } finally {
     webpush.sendNotification = originalSend;
+    globalThis.fetch = originalFetch;
   }
 });

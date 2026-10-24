@@ -25,9 +25,10 @@ export async function requestPushPermission(prompt: boolean) {
   }
   const Notifications = await import("expo-notifications");
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("orders", {
-      name: "طلبات البوفيه", importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250], sound: "default",
+    // Android channel sounds are immutable. Use a new ID for the bundled bell.
+    await Notifications.setNotificationChannelAsync("orders-doorbell-v1", {
+      name: "طلبات البوفيه — جرس الباب", importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250], sound: "door_bell.mp3",
     });
   }
   const existing = await Notifications.getPermissionsAsync();

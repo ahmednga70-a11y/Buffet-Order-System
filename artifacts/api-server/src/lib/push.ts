@@ -98,7 +98,7 @@ export async function notifyWorkers(projectId: string, orderId: string, urgent =
                 "Content-Type": "application/json",
                 ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
               },
-              body: JSON.stringify({ to: device.token, title, body, sound: "default", channelId: "orders", priority: "high", data: { orderId, urgent } }),
+              body: JSON.stringify({ to: device.token, title, body, sound: "door_bell.mp3", channelId: "orders-doorbell-v1", priority: "high", data: { orderId, urgent } }),
               signal: AbortSignal.timeout(6000),
             });
             const ticket = await response.json() as { data?: { status?: string; details?: { error?: string } } };

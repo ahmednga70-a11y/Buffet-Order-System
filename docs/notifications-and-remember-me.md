@@ -39,8 +39,27 @@ version. This is not a guarantee of delivery to every powered-off device.
 
 ## Android APK notifications
 
-The app uses `expo-notifications`, the `orders` Android channel and Expo's Push
+The app uses `expo-notifications`, the `orders-doorbell-v1` Android channel and Expo's Push
 service. The APK must be a real standalone build, not Expo Go.
+
+### Worker bell sound
+
+The worker's new-order and urgency notifications use the supplied, unmodified
+`assets/sounds/door_bell.mp3` (approximately 30 seconds). The notifications plugin
+bundles it into native builds; the channel and server payload both select that
+filename. A new channel ID is intentional: Android does not let applications
+change the sound of an existing channel in place. The user can still change or
+mute notification sounds through Android settings. Existing APKs need an updated
+build and notification activation before this custom channel can be used.
+
+On the web worker queue, “تجربة وتفعيل جرس العامل” plays the same file and enables
+it for new orders/urgency while this page is open. Playback uses one audio player,
+so alerts restart the bell rather than overlap. The stop button and leaving the
+worker screen stop playback. The user must activate audio for the page because
+browsers restrict automatic audio. A denied/failed playback shows a visible
+explanation and is not marked enabled. Reloading requires activation again.
+Closed-site Web Push still uses the browser/OS sound; a service worker cannot
+reliably replace that with this MP3.
 
 External prerequisites (not currently configured in this repository):
 

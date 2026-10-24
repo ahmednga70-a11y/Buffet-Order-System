@@ -14,3 +14,9 @@ Keep the Web Push signing identity durable across serverless instances and deplo
 **Why:** Generating new VAPID keys on every cold start invalidates existing browser subscriptions. Changing the encryption secret also prevents reading the saved signing identity and device credentials.
 
 **How to apply:** Reuse the persisted encrypted identity. Plan key rotation and device re-enrollment explicitly, not as an incidental part of a deploy or server restart. Do not expose subscription credentials or private keys in client responses, logs or memory.
+
+The worker's alert tone should be fixed; the user selected their uploaded door-bell sound.
+
+**Why:** The user asked for “نغمة معينة عند العامل تكون ثابتة” and supplied the audio.
+
+**How to apply:** Preserve that sound choice when revising worker notifications. Distinguish browser-page audio from the OS-controlled sound of closed-site notifications, and do not promise that a fixed tone overrides Android's user sound/mute settings.

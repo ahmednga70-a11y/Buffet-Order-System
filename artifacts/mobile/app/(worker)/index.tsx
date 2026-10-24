@@ -21,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import colors from "@/constants/colors";
 import { PushNotificationControl } from "@/components/PushNotificationControl";
+import { useWorkerAlertSound } from "@/hooks/useWorkerAlertSound";
 
 function formatTime(iso: string) {
   const date = new Date(iso);
@@ -34,6 +35,7 @@ export default function WorkerOrdersScreen() {
   const queryClient = useQueryClient();
   const previousOrdersRef = useRef<Map<string, string | undefined> | null>(null);
   const [orderNotice, setOrderNotice] = useState("");
+  const { enabled: soundEnabled, busy: soundBusy, error: soundError, toggle: toggleSound, playAlert } = useWorkerAlertSound();
 
   const { data: orders, isLoading, refetch, isRefetching } = useGetOrders(
     { status: "pending" },
@@ -48,12 +50,13 @@ export default function WorkerOrdersScreen() {
     if (previous && orders.some((order) => !previous.has(order.id) || (order.urgentAt && !previous.get(order.id)))) {
       setOrderNotice(orders.some((order) => order.urgentAt && !previous.get(order.id))
         ? "فيه طلب مستعجل — راجع الطلبات المميزة بالأحمر" : "وصل طلب جديد");
+      playAlert();
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
     }
     previousOrdersRef.current = new Map(orders.map((order) => [order.id, order.urgentAt]));
-  }, [orders]);
+  }, [orders, playAlert]);
 
   const handleDeliver = (id: string, name: string, personName: string) => {
     Alert.alert("تأكيد التسليم", `هتسلم "${name}" لـ ${personName}؟`, [
@@ -114,6 +117,15 @@ export default function WorkerOrdersScreen() {
       </View>
 
       <PushNotificationControl />
+      {Platform.OS === "web" ? <View style={styles.soundControl}>
+        <Pressable testID="worker-alert-sound" accessibilityRole="button"
+          disabled={soundBusy} onPress={toggleSound} style={styles.notice}>
+          {soundBusy ? <ActivityIndicator color={colors.light.primary} /> :
+            <Text style={styles.noticeText}>{soundEnabled ? "جرس العامل مفعّل — إيقاف الصوت" : "تجربة وتفعيل جرس العامل"}</Text>}
+        </Pressable>
+        <Text style={styles.soundHint}>الجرس للطلبات الجديدة والاستعجال أثناء فتح هذه الصفحة. صوت الموقع المقفول يحدده النظام.</Text>
+        {soundError ? <Text accessibilityRole="alert" style={styles.soundError}>{soundError}</Text> : null}
+      </View> : null}
       {orderNotice ? <Pressable onPress={() => setOrderNotice("")} style={styles.notice} accessibilityRole="button">
         <Text style={styles.noticeText}>{orderNotice} — إخفاء</Text>
       </Pressable> : null}
@@ -145,6 +157,9 @@ export default function WorkerOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  soundControl: { paddingBottom: 12 },
+  soundHint: { marginHorizontal: 16, fontSize: 11, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground, textAlign: "right" },
+  soundError: { marginHorizontal: 16, fontSize: 12, fontFamily: "Inter_500Medium", color: colors.light.destructive, textAlign: "right" },
   notice: { marginHorizontal: 16, marginBottom: 10, padding: 12, borderRadius: 8, backgroundColor: colors.light.secondary },
   noticeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.light.primary, textAlign: "right" },
   urgentCard: { borderColor: colors.light.destructive, borderLeftColor: colors.light.destructive },
