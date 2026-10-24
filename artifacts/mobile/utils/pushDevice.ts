@@ -15,7 +15,8 @@ export async function requestPushPermission(prompt: boolean) {
       if (prompt) throw new Error("هذا المتصفح لا يدعم الإشعارات الخلفية. جرّب Chrome أو ثبّت الموقع على الشاشة الرئيسية في iPhone.");
       return false;
     }
-    const permission = prompt ? await Notification.requestPermission() : Notification.permission;
+    const permission = prompt && Notification.permission === "default"
+      ? await Notification.requestPermission() : Notification.permission;
     if (permission !== "granted" && prompt) throw new Error("الإشعارات غير مسموحة. فعّل إذن الإشعارات من إعدادات المتصفح ثم حاول تاني.");
     return permission === "granted";
   }

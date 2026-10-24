@@ -20,3 +20,15 @@ The worker's alert tone should be fixed; the user selected their uploaded door-b
 **Why:** The user asked for “نغمة معينة عند العامل تكون ثابتة” and supplied the audio.
 
 **How to apply:** Preserve that sound choice when revising worker notifications. Distinguish browser-page audio from the OS-controlled sound of closed-site notifications, and do not promise that a fixed tone overrides Android's user sound/mute settings.
+
+Notification activation and the bell choice must survive reopening the app and
+signing in again after the worker enables them once.
+
+**Why:** The user asked “الاشعارات تفضل متفعلة لو فعلتها مرة واحدة ... مش كل مرة ادخل”.
+
+**How to apply:** Keep saved account/project/device choices separate from active
+push registrations. Logout must stop that account's device delivery for privacy,
+but preserve its choice for silent restoration at the next login. Another account
+or project must not inherit the choice. A temporary connection failure or browser
+autoplay restriction is not an explicit opt-out; retain the setting and explain
+recovery. Never repeatedly prompt for OS permission or bypass revoked permission.

@@ -2,12 +2,13 @@ import {
   useDeliverOrder,
   useGetOrders,
   getGetOrdersQueryKey,
+  getGetDailyStatsQueryKey,
 } from "@workspace/api-client-react";
+import type { Order } from "@workspace/api-client-react";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -35,7 +36,9 @@ export default function WorkerOrdersScreen() {
   const queryClient = useQueryClient();
   const previousOrdersRef = useRef<Map<string, string | undefined> | null>(null);
   const [orderNotice, setOrderNotice] = useState("");
-  const { enabled: soundEnabled, busy: soundBusy, error: soundError, toggle: toggleSound, playAlert } = useWorkerAlertSound();
+  const [deliveryTarget, setDeliveryTarget] = useState<string | null>(null);
+  const [deliveryError, setDeliveryError] = useState("");
+  const { enabled: soundEnabled, busy: soundBusy, error: soundError, needsGesture, resume: resumeSound, toggle: toggleSound, playAlert } = useWorkerAlertSound();
 
   const { data: orders, isLoading, refetch, isRefetching } = useGetOrders(
     { status: "pending" },
@@ -58,22 +61,28 @@ export default function WorkerOrdersScreen() {
     previousOrdersRef.current = new Map(orders.map((order) => [order.id, order.urgentAt]));
   }, [orders, playAlert]);
 
-  const handleDeliver = (id: string, name: string, personName: string) => {
-    Alert.alert("تأكيد التسليم", `هتسلم "${name}" لـ ${personName}؟`, [
-      { text: "لأ", style: "cancel" },
-      {
-        text: "أيوه سلّمت",
-        onPress: async () => {
-          try {
-            await deliverOrderMutation.mutateAsync({ id });
-            if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
-          } catch {
-            Alert.alert("خطأ", "مش قدر يحدث الطلب");
-          }
-        },
-      },
-    ]);
+  const handleDeliver = async (id: string) => {
+    setDeliveryError("");
+    try {
+      await deliverOrderMutation.mutateAsync({ id });
+      queryClient.setQueryData<Order[]>(getGetOrdersQueryKey({ status: "pending" }),
+        (current) => current?.filter((order) => order.id !== id));
+      setDeliveryTarget(null);
+      setOrderNotice("تم تسجيل التسليم — في انتظار تأكيد العميل");
+      if (Platform.OS !== "web") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetDailyStatsQueryKey() }),
+      ]);
+    } catch (error: unknown) {
+      const status = (error as { status?: number }).status;
+      setDeliveryError(status === 409 ? "حالة الطلب اتغيّرت؛ ممكن يكون اتلغى أو تم تسليمه بالفعل. تم تحديث القائمة."
+        : status === 401 ? "جلسة الدخول انتهت. سجّل دخولك مرة أخرى."
+        : status === 403 ? "غير مسموح لهذا الحساب بتسليم الطلب في المشروع الحالي."
+        : status === 404 ? "الطلب غير موجود في المشروع الحالي. تم تحديث القائمة."
+        : "تعذّر تسجيل التسليم. تحقق من الاتصال وحدّث القائمة قبل المحاولة مرة أخرى.");
+      await queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
+    }
   };
 
   const renderItem = ({ item }: { item: NonNullable<typeof orders>[0] }) => (
@@ -90,13 +99,28 @@ export default function WorkerOrdersScreen() {
           </View>
         </View>
         <Pressable
+          testID={`deliver-order-${item.id}`}
+          accessibilityRole="button"
           style={({ pressed }) => [styles.doneBtn, pressed && { opacity: 0.8 }]}
-          onPress={() => handleDeliver(item.id, item.menuItemNameAr, item.userDisplayName)}
+          onPress={() => { setDeliveryError(""); setDeliveryTarget(item.id); }}
           disabled={deliverOrderMutation.isPending}
         >
-          <Text style={styles.doneBtnText}>سلّمت ✓</Text>
+          <Text style={styles.doneBtnText}>{deliverOrderMutation.isPending && deliverOrderMutation.variables?.id === item.id ? "جارٍ التسليم…" : "سلّمت ✓"}</Text>
         </Pressable>
       </View>
+      {deliveryTarget === item.id ? <View style={styles.deliveryConfirmation}>
+        <Text style={styles.deliveryPrompt}>تأكيد تسليم «{item.menuItemNameAr}» إلى {item.userDisplayName}؟</Text>
+        <View style={styles.deliveryActions}>
+          <Pressable testID={`keep-pending-${item.id}`} accessibilityRole="button"
+            style={styles.backButton} disabled={deliverOrderMutation.isPending} onPress={() => setDeliveryTarget(null)}>
+            <Text style={styles.noticeText}>رجوع بدون تسليم</Text>
+          </Pressable>
+          <Pressable testID={`confirm-deliver-${item.id}`} accessibilityRole="button"
+            style={styles.doneBtn} disabled={deliverOrderMutation.isPending} onPress={() => handleDeliver(item.id)}>
+            <Text style={styles.doneBtnText}>{deliverOrderMutation.isPending ? "جارٍ الحفظ…" : "تأكيد التسليم"}</Text>
+          </Pressable>
+        </View>
+      </View> : null}
     </View>
   );
 
@@ -117,13 +141,18 @@ export default function WorkerOrdersScreen() {
       </View>
 
       <PushNotificationControl />
+      {deliveryError ? <Text testID="delivery-error" accessibilityRole="alert" style={styles.deliveryError}>{deliveryError}</Text> : null}
       {Platform.OS === "web" ? <View style={styles.soundControl}>
         <Pressable testID="worker-alert-sound" accessibilityRole="button"
           disabled={soundBusy} onPress={toggleSound} style={styles.notice}>
           {soundBusy ? <ActivityIndicator color={colors.light.primary} /> :
             <Text style={styles.noticeText}>{soundEnabled ? "جرس العامل مفعّل — إيقاف الصوت" : "تجربة وتفعيل جرس العامل"}</Text>}
         </Pressable>
-        <Text style={styles.soundHint}>الجرس للطلبات الجديدة والاستعجال أثناء فتح هذه الصفحة. صوت الموقع المقفول يحدده النظام.</Text>
+        <Text style={styles.soundHint}>اختيار الجرس محفوظ ويعود عند فتح الصفحة. قد يطلب المتصفح تفاعلًا للسماح بالصوت؛ صوت الموقع المقفول يحدده النظام.</Text>
+        {needsGesture ? <Pressable testID="resume-worker-sound" accessibilityRole="button"
+          onPress={() => { void resumeSound(); }} style={styles.notice}>
+          <Text style={styles.noticeText}>تشغيل الجرس لهذا المتصفح</Text>
+        </Pressable> : null}
         {soundError ? <Text accessibilityRole="alert" style={styles.soundError}>{soundError}</Text> : null}
       </View> : null}
       {orderNotice ? <Pressable onPress={() => setOrderNotice("")} style={styles.notice} accessibilityRole="button">
@@ -157,6 +186,11 @@ export default function WorkerOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  deliveryConfirmation: { paddingTop: 14, gap: 10 },
+  deliveryPrompt: { fontFamily: "Inter_600SemiBold", color: colors.light.foreground, fontSize: 14, textAlign: "right" },
+  deliveryActions: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 },
+  backButton: { padding: 10, borderRadius: colors.radius, backgroundColor: colors.light.secondary },
+  deliveryError: { marginHorizontal: 16, marginBottom: 12, fontFamily: "Inter_500Medium", fontSize: 13, color: colors.light.destructive, textAlign: "right" },
   soundControl: { paddingBottom: 12 },
   soundHint: { marginHorizontal: 16, fontSize: 11, fontFamily: "Inter_400Regular", color: colors.light.mutedForeground, textAlign: "right" },
   soundError: { marginHorizontal: 16, fontSize: 12, fontFamily: "Inter_500Medium", color: colors.light.destructive, textAlign: "right" },

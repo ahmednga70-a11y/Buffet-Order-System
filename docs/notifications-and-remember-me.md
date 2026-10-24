@@ -9,6 +9,19 @@ storage and native tokens remain in memory. Logout clears the saved session,
 query cache and this device's notification subscription. An enabled notification
 device needs connectivity to unregister safely before logout.
 
+Worker notification choices (push and bell separately) are saved on the device,
+scoped to the account and project. Closing/reopening the app or logging in again
+does not reset them. Logout removes the active device registration for privacy,
+not the choice: a later login to the same account/project silently re-registers
+using the existing OS permission. Another account/project does not inherit it.
+Explicitly switching notifications off persists that choice.
+
+On startup the UI first reads the saved setting. A failed network verification
+shows “اختيار التفعيل محفوظ”, not an instruction to re-enable notifications.
+Connection recovery, foregrounding, and a 30-second retry timer retry
+registration without a permission prompt. Revoked/unsupported permission is
+reported separately, without erasing the saved choice.
+
 Saved sessions are validated against `/api/auth/me` at startup. Expired tokens,
 disabled users and changed roles require signing in again. A network outage alone
 does not erase a remembered login.
@@ -57,7 +70,9 @@ it for new orders/urgency while this page is open. Playback uses one audio playe
 so alerts restart the bell rather than overlap. The stop button and leaving the
 worker screen stop playback. The user must activate audio for the page because
 browsers restrict automatic audio. A denied/failed playback shows a visible
-explanation and is not marked enabled. Reloading requires activation again.
+explanation. The bell selection survives reloads and login; an autoplay restriction
+does not switch it off. If playback is blocked, “تشغيل الجرس لهذا المتصفح” retries
+audio from a user gesture without making the worker choose activation again.
 Closed-site Web Push still uses the browser/OS sound; a service worker cannot
 reliably replace that with this MP3.
 
