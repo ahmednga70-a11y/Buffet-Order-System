@@ -1,16 +1,19 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "npx esbuild artifacts/api-server/src/vercel-entry.ts --bundle --platform=node --outfile=api/index.js && pnpm --filter @workspace/mobile exec expo export -p web",
-  "outputDirectory": "artifacts/mobile/dist",
-  "rewrites": [
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "references": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "path": "../../lib/db"
     },
     {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "path": "../../lib/api-zod"
     }
   ]
 }
