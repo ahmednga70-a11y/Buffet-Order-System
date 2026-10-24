@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/mobile exec expo export -p web",
+  "buildCommand": "pnpm --filter @workspace/api-server run typecheck:vercel && pnpm --filter @workspace/mobile exec expo export -p web",
   "outputDirectory": "artifacts/mobile/dist",
   "functions": {
     "api/index.ts": {
