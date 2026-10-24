@@ -13,5 +13,6 @@ export const GetOrdersStatus = {
   pending: 'pending',
   delivered: 'delivered',
   completed: 'completed',
+  cancelled: 'cancelled',
   all: 'all',
 } as const;

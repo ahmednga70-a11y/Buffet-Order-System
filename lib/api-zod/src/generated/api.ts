@@ -47,6 +47,29 @@ export const UnregisterNotificationDeviceResponse = zod.void()
 
 
 /**
+ * @summary Cancel your own pending order without deleting its history
+ */
+export const CancelOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CancelOrderResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userDisplayName": zod.string(),
+  "projectId": zod.string(),
+  "menuItemId": zod.string(),
+  "menuItemName": zod.string(),
+  "menuItemNameAr": zod.string(),
+  "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().optional()
+})
+
+
+/**
  * @summary Mark your pending order as urgent once
  */
 export const ExpediteOrderParams = zod.object({
@@ -63,7 +86,7 @@ export const ExpediteOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
-  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
@@ -244,7 +267,7 @@ export const UpdateWorkerResponse = zod.object({
  * @summary Get all orders (worker) or my orders (customer)
  */
 export const GetOrdersQueryParams = zod.object({
-  "status": zod.enum(['pending', 'delivered', 'completed', 'all']).optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled', 'all']).optional(),
   "mine": zod.coerce.boolean().optional()
 })
 
@@ -258,7 +281,7 @@ export const GetOrdersResponseItem = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
-  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
@@ -283,7 +306,7 @@ export const CreateOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
-  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
@@ -306,7 +329,7 @@ export const DeliverOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
-  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
@@ -329,7 +352,7 @@ export const RejectOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
-  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })
@@ -352,7 +375,7 @@ export const ConfirmOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
-  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
 })

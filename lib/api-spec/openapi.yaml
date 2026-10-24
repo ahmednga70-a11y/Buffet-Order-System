@@ -84,6 +84,32 @@ paths:
       responses:
         "204":
           description: Device removed
+  /orders/{id}/cancel:
+    patch:
+      operationId: cancelOrder
+      tags: [orders]
+      summary: Cancel your own pending order without deleting its history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cancelled order, including an already-cancelled retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          description: Sign-in required
+        "403":
+          description: Customer accounts only
+        "404":
+          description: Order not found in this customer's project
+        "409":
+          description: Order is no longer pending
   /orders/{id}/urgent:
     patch:
       operationId: expediteOrder
@@ -341,7 +367,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [pending, delivered, completed, all]
+            enum: [pending, delivered, completed, cancelled, all]
         - name: mine
           in: query
           schema:
@@ -670,7 +696,7 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, delivered, completed]
+          enum: [pending, delivered, completed, cancelled]
         createdAt:
           type: string
         completedAt:

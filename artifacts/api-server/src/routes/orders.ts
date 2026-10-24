@@ -7,7 +7,7 @@ import {
   getOrderById,
   getOrdersByUser,
   getOrdersByStatus,
-  getUserById,
+  cancelOrder,
   MENU_ITEMS,
   expediteOrder,
 } from "../lib/store.js";
@@ -36,7 +36,7 @@ router.get("/orders", async (req, res) => {
     }
   } else {
     orders = await getOrdersByStatus(
-      status as "pending" | "delivered" | "completed" | "all",
+      status as "pending" | "delivered" | "completed" | "cancelled" | "all",
       user.projectId,
     );
   }
@@ -88,6 +88,26 @@ router.post("/orders", async (req, res) => {
   res.status(201).json(created);
 });
 
+router.patch("/orders/:id/cancel", async (req, res) => {
+  const user = await getActiveSession(req);
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (user.role !== "customer") { res.status(403).json({ error: "Only customers can cancel their orders" }); return; }
+  const order = await getOrderById(req.params.id!);
+  if (!order || order.userId !== user.id || order.projectId !== user.projectId) {
+    res.status(404).json({ error: "Order not found" }); return;
+  }
+  if (order.status === "cancelled") { res.json(order); return; }
+  if (order.status !== "pending") { res.status(409).json({ error: "Only pending orders can be cancelled" }); return; }
+  const updated = await cancelOrder(order.id, user.id, user.projectId);
+  if (!updated) {
+    // A concurrent retry is successful, but delivery wins must not be overwritten.
+    const latest = await getOrderById(order.id);
+    if (latest?.status === "cancelled") { res.json(latest); return; }
+    res.status(409).json({ error: "Order changed; refresh and try again" }); return;
+  }
+  res.json(updated);
+});
+
 router.patch("/orders/:id/urgent", async (req, res) => {
   const user = await getActiveSession(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
@@ -129,7 +149,7 @@ router.patch("/orders/:id/deliver", async (req, res) => {
 
   const updated = await deliverOrder(order.id);
   if (!updated) {
-    res.status(404).json({ error: "Order not found" });
+    res.status(409).json({ error: "Order changed; refresh and try again" });
     return;
   }
 
@@ -160,7 +180,7 @@ router.patch("/orders/:id/reject", async (req, res) => {
 
   const updated = await rejectOrder(order.id);
   if (!updated) {
-    res.status(404).json({ error: "Order not found" });
+    res.status(409).json({ error: "Order changed; refresh and try again" });
     return;
   }
 
@@ -191,7 +211,7 @@ router.patch("/orders/:id/confirm", async (req, res) => {
 
   const updated = await confirmOrder(order.id);
   if (!updated) {
-    res.status(404).json({ error: "Order not found" });
+    res.status(409).json({ error: "Order changed; refresh and try again" });
     return;
   }
 

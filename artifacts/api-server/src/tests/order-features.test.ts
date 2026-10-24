@@ -105,6 +105,52 @@ test("urgent is persisted, customer-owned, project-scoped and atomic", async () 
   assert.equal((await request(`/orders/${orderId}/urgent`, tokens.customer, "PATCH")).status, 409);
 });
 
+test("cancellation is owned, scoped, retained, idempotent and cannot race delivery", async () => {
+  const statsPath = `/stats/daily?date=${new Date().toISOString().slice(0, 10)}`;
+  const baselineStatsResponse = await request(statsPath, tokens.worker);
+  assert.equal(baselineStatsResponse.status, 200);
+  const baselineStats = await baselineStatsResponse.json() as { totalOrders: number };
+  const menu = await (await request("/menu")).json() as { id: string }[];
+  const makeOrder = async () => {
+    const response = await request("/orders", tokens.customer, "POST", { menuItemId: menu[0]!.id });
+    assert.equal(response.status, 201);
+    return await response.json() as { id: string };
+  };
+  const order = await makeOrder();
+  assert.equal((await request(`/orders/${order.id}/cancel`, undefined, "PATCH")).status, 401);
+  assert.equal((await request(`/orders/${order.id}/cancel`, tokens.other, "PATCH")).status, 404);
+  assert.equal((await request(`/orders/${order.id}/cancel`, tokens.worker, "PATCH")).status, 403);
+  const crossToken = await login("customer", projectB);
+  assert.equal((await request(`/orders/${order.id}/cancel`, crossToken, "PATCH")).status, 404);
+  const cancelled = await Promise.all([0, 1].map(() => request(`/orders/${order.id}/cancel`, tokens.customer, "PATCH")));
+  assert.ok(cancelled.every((response) => response.status === 200));
+  assert.equal((await cancelled[0]!.json() as { status: string }).status, "cancelled");
+  const mine = await (await request("/orders?mine=true&status=all", tokens.customer)).json() as { id: string; status: string }[];
+  assert.equal(mine.find((row) => row.id === order.id)?.status, "cancelled");
+  const statsAfterCancel = await (await request(statsPath, tokens.worker)).json() as { totalOrders: number };
+  assert.equal(statsAfterCancel.totalOrders, baselineStats.totalOrders, "cancelled drinks do not inflate daily totals");
+  const pending = await (await request("/orders?status=pending", tokens.worker)).json() as { id: string }[];
+  assert.equal(pending.some((row) => row.id === order.id), false);
+  for (const [action, token] of [["deliver", tokens.worker], ["urgent", tokens.customer], ["confirm", tokens.customer], ["reject", tokens.customer]] as const) {
+    assert.equal((await request(`/orders/${order.id}/${action}`, token, "PATCH")).status, 409);
+  }
+  const delivered = await makeOrder();
+  await request(`/orders/${delivered.id}/deliver`, tokens.worker, "PATCH");
+  assert.equal((await request(`/orders/${delivered.id}/cancel`, tokens.customer, "PATCH")).status, 409);
+  await request(`/orders/${delivered.id}/confirm`, tokens.customer, "PATCH");
+  assert.equal((await request(`/orders/${delivered.id}/cancel`, tokens.customer, "PATCH")).status, 409);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const racing = await makeOrder();
+    const results = await Promise.all([
+      request(`/orders/${racing.id}/cancel`, tokens.customer, "PATCH"),
+      request(`/orders/${racing.id}/deliver`, tokens.worker, "PATCH"),
+    ]);
+    assert.deepEqual(results.map((response) => response.status).sort(), [200, 409]);
+    const stored = await pool.query("SELECT status FROM orders WHERE id=$1", [racing.id]);
+    assert.equal(stored.rows[0].status, results[0]!.status === 200 ? "cancelled" : "delivered");
+  }
+});
+
 test("push configuration is worker-only, stable, encrypted and rejects unsafe endpoints", async () => {
   assert.equal((await request("/notifications/config", tokens.customer)).status, 403);
   const first = await request("/notifications/config", tokens.worker);

@@ -4,10 +4,11 @@ import {
   useRejectOrder,
   getGetOrdersQueryKey,
   useExpediteOrder,
+  useCancelOrder,
 } from "@workspace/api-client-react";
 import type { Order } from "@workspace/api-client-react";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,12 +33,14 @@ function statusLabel(status: string) {
   if (status === "pending") return "في الانتظار";
   if (status === "delivered") return "في انتظار تأكيدك";
   if (status === "completed") return "وصل ✓";
+  if (status === "cancelled") return "ملغي";
   return status;
 }
 
 function statusBadgeStyle(status: string) {
   if (status === "completed") return styles.badgeDone;
   if (status === "delivered") return styles.badgeDelivered;
+  if (status === "cancelled") return styles.badgeCancelled;
   return styles.badgePending;
 }
 
@@ -54,6 +57,25 @@ export default function MyOrdersScreen() {
   const confirmMutation = useConfirmOrder();
   const rejectMutation = useRejectOrder();
   const expediteMutation = useExpediteOrder();
+  const cancelMutation = useCancelOrder();
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<{ id: string; message: string } | null>(null);
+
+  const handleCancel = async (id: string) => {
+    setCancelError(null);
+    try {
+      const cancelled = await cancelMutation.mutateAsync({ id });
+      queryClient.setQueryData<Order[]>(getGetOrdersQueryKey({ mine: true, status: "all" }),
+        (current) => current?.map((order) => order.id === id ? cancelled : order));
+      setCancelTarget(null);
+      await queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
+    } catch (error: unknown) {
+      setCancelError({ id, message: (error as { status?: number }).status === 409
+        ? "حالة الطلب اتغيّرت. لا يمكن إلغاء طلب تم تسليمه."
+        : "تعذّر إلغاء الطلب. تأكد من الاتصال وحاول مرة أخرى." });
+      await queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
+    }
+  };
 
   const handleExpedite = async (id: string) => {
     try {
@@ -144,11 +166,32 @@ export default function MyOrdersScreen() {
         {item.status === "pending" && (
           item.urgentAt ? <Text style={styles.urgentText}>طلب مستعجل — تم إرسال طلب الاستعجال</Text> : (
             <Pressable style={styles.urgentButton} testID={`expedite-${item.id}`}
-              onPress={() => handleExpedite(item.id)} disabled={expediteMutation.isPending} accessibilityRole="button">
+              onPress={() => handleExpedite(item.id)} disabled={expediteMutation.isPending || cancelMutation.isPending} accessibilityRole="button">
               <Text style={styles.urgentText}>{expediteMutation.isPending && expediteMutation.variables?.id === item.id ? "جارٍ الإرسال…" : "استعجال الطلب وتنبيه العامل"}</Text>
             </Pressable>
           )
         )}
+
+        {item.status === "pending" && (
+          cancelTarget === item.id ? <View style={styles.cancelConfirmation}>
+            <Text style={styles.cancelText}>تأكيد إلغاء الطلب؟ لن يظهر للعامل في قائمة الانتظار.</Text>
+            <View style={styles.actionBtns}>
+              <Pressable testID={`keep-order-${item.id}`} accessibilityRole="button"
+                disabled={cancelMutation.isPending} style={styles.urgentButton} onPress={() => setCancelTarget(null)}>
+                <Text style={styles.urgentText}>رجوع بدون إلغاء</Text>
+              </Pressable>
+              <Pressable testID={`confirm-cancel-${item.id}`} accessibilityRole="button" style={styles.cancelButton}
+                disabled={cancelMutation.isPending || expediteMutation.isPending} onPress={() => handleCancel(item.id)}>
+                <Text style={styles.cancelText}>{cancelMutation.isPending ? "جارٍ الإلغاء…" : "تأكيد الإلغاء"}</Text>
+              </Pressable>
+            </View>
+          </View> : <Pressable testID={`cancel-order-${item.id}`} accessibilityRole="button" style={styles.cancelButton}
+            disabled={cancelMutation.isPending || expediteMutation.isPending}
+            onPress={() => { setCancelError(null); setCancelTarget(item.id); }}>
+            <Text style={styles.cancelText}>إلغاء الطلب</Text>
+          </Pressable>
+        )}
+        {cancelError?.id === item.id ? <Text accessibilityRole="alert" style={styles.cancelText}>{cancelError.message}</Text> : null}
 
         {isDelivered && (
           <View style={styles.actionRow}>
@@ -211,6 +254,10 @@ export default function MyOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  badgeCancelled: { backgroundColor: colors.light.secondary },
+  cancelConfirmation: { paddingTop: 12, gap: 8 },
+  cancelButton: { marginTop: 10, padding: 10, borderRadius: colors.radius, borderWidth: 1, borderColor: colors.light.destructive },
+  cancelText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.light.destructive, textAlign: "center" },
   urgentButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.light.destructive, marginTop: 8 },
   urgentText: { fontFamily: "Inter_600SemiBold", color: colors.light.destructive, fontSize: 13, textAlign: "right", marginTop: 4 },
   container: { flex: 1, backgroundColor: colors.light.background },

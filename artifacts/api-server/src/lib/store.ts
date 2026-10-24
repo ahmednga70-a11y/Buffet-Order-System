@@ -21,7 +21,7 @@ export interface Order {
   menuItemNameAr: string;
   notes?: string;
   urgentAt?: string;
-  status: "pending" | "delivered" | "completed";
+  status: "pending" | "delivered" | "completed" | "cancelled";
   createdAt: string;
   deliveredAt?: string;
   completedAt?: string;
@@ -179,21 +179,30 @@ export async function createOrder(order: Order): Promise<Order> {
   return toOrder(row!);
 }
 
-async function updateOrder(id: string, values: Partial<typeof ordersTable.$inferInsert>): Promise<Order | undefined> {
-  const [row] = await db.update(ordersTable).set(values).where(eq(ordersTable.id, id)).returning();
+async function updateOrder(id: string, expectedStatus: Order["status"], values: Partial<typeof ordersTable.$inferInsert>): Promise<Order | undefined> {
+  const [row] = await db.update(ordersTable).set(values)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.status, expectedStatus))).returning();
   return row ? toOrder(row) : undefined;
 }
 
 export function deliverOrder(id: string) {
-  return updateOrder(id, { status: "delivered", deliveredAt: new Date() });
+  return updateOrder(id, "pending", { status: "delivered", deliveredAt: new Date() });
 }
 
 export function confirmOrder(id: string) {
-  return updateOrder(id, { status: "completed", completedAt: new Date() });
+  return updateOrder(id, "delivered", { status: "completed", completedAt: new Date() });
 }
 
 export function rejectOrder(id: string) {
-  return updateOrder(id, { status: "pending", deliveredAt: null });
+  return updateOrder(id, "delivered", { status: "pending", deliveredAt: null });
+}
+
+export async function cancelOrder(id: string, userId: string, projectId: string) {
+  const [row] = await db.update(ordersTable).set({ status: "cancelled" })
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId),
+      eq(ordersTable.projectId, projectId), eq(ordersTable.status, "pending")))
+    .returning();
+  return row ? toOrder(row) : undefined;
 }
 
 export async function expediteOrder(id: string, userId: string, projectId: string) {
@@ -218,7 +227,7 @@ export async function getOrdersByUser(userId: string, projectId: string): Promis
 }
 
 export async function getOrdersByStatus(
-  status: "pending" | "delivered" | "completed" | "all",
+  status: Order["status"] | "all",
   projectId: string,
 ): Promise<Order[]> {
   const rows = status === "all"
@@ -239,7 +248,8 @@ export async function getDailyStats(date: string, projectId: string) {
       lt(ordersTable.createdAt, end),
       eq(ordersTable.projectId, projectId),
     )))
-    .map(toOrder);
+    .map(toOrder)
+    .filter((order) => order.status !== "cancelled");
 
   const byUserMap = new Map<string, { displayName: string; items: Map<string, { name: string; nameAr: string; count: number }> }>();
   const byItemMap = new Map<string, { name: string; nameAr: string; count: number }>();

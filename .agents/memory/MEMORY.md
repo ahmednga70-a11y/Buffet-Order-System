@@ -3,3 +3,4 @@
 - [ORM type identity](orm-type-identity.md) — Keep query operators and schemas in one package to avoid nominal type conflicts in external builds.
 - [Background notifications](background-notifications.md) — Both browser and APK must receive closed-app alerts; native delivery requires separate Expo/FCM verification.
 - [Database target verification](database-target-verification.md) — A production environment label can appear in the workspace; verify the actual database before fixtures.
+- [Order cancellation policy](order-lifecycle.md) — Cancel only pending orders; retain history, exclude cancelled orders from operational totals, and prevent delivery races.
