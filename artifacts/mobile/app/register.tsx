@@ -36,6 +36,10 @@ export default function RegisterScreen() {
     if (!projectId && projects?.[0]) setProjectId(projects[0].id);
   }, [projectId, projects]);
 
+  const goToLogin = () => {
+    router.replace({ pathname: "/login", params: { projectId } });
+  };
+
   const handleRegister = async () => {
     if (!projectId || !username.trim() || !password.trim() || !displayName.trim()) {
       Alert.alert("خطأ", "من فضلك أدخل كل البيانات");
@@ -81,8 +85,8 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>← رجوع</Text>
+          <Pressable style={styles.backBtn} onPress={goToLogin} accessibilityRole="link">
+            <Text style={styles.backBtnText}>← العودة لتسجيل الدخول</Text>
           </Pressable>
           <Text style={styles.title}>حساب جديد</Text>
           <Text style={styles.subtitle}>أنشئ حسابك في بوفيه الشركة</Text>
@@ -150,6 +154,9 @@ export default function RegisterScreen() {
               <Text style={styles.registerBtnText}>إنشاء الحساب</Text>
             )}
           </Pressable>
+          <Pressable style={styles.loginLink} onPress={goToLogin} accessibilityRole="link">
+            <Text style={styles.loginLinkText}>عندك حساب أو أنت الأدمن؟ تسجيل الدخول</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -214,4 +221,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   registerBtnText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#fff" },
+  loginLink: { alignItems: "center", paddingVertical: 12 },
+  loginLinkText: {
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: colors.light.primary,
+    textAlign: "center",
+  },
 });

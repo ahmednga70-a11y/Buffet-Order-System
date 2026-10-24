@@ -1,6 +1,6 @@
 import { useGetProjects, useLogin } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,12 +22,13 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const loginMutation = useLogin();
+  const params = useLocalSearchParams<{ projectId?: string }>();
   const { data: projects, isLoading: projectsLoading } = useGetProjects();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(params.projectId ?? "");
 
   useEffect(() => {
     if (!projectId && projects?.[0]) setProjectId(projects[0].id);
