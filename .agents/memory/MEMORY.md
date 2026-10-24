@@ -1,2 +1,3 @@
 - [Android APK build constraints](android-apk-build.md) — Android APKs require Expo's external build flow; this workspace lacks a local Android toolchain.
 - [External production hosting](external-production.md) — Live hosting uses Vercel with Neon; Replit development checks do not verify that deployment.
+- [ORM type identity](orm-type-identity.md) — Keep query operators and schemas in one package to avoid nominal type conflicts in external builds.

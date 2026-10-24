@@ -1,5 +1,4 @@
-import { db, ordersTable, projectsTable, usersTable } from "@workspace/db";
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { and, db, desc, eq, gte, lt, ordersTable, projectsTable, usersTable } from "@workspace/db";
 import { hashPassword } from "./password.js";
 
 export interface User {

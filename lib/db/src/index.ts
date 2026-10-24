@@ -14,3 +14,5 @@ export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 export * from "./schema/index.js";
+// Operators must share the ORM instance that created db and its table types.
+export { and, desc, eq, gte, lt } from "drizzle-orm";
