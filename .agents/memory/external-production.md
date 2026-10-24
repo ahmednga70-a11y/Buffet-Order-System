@@ -20,3 +20,9 @@ Preserve inferred types from Express application and router factories instead of
 **Why:** The external Vercel build reported missing inherited callable signatures and router methods for these explicit wrapper types while local checks passed.
 
 **How to apply:** Let factory return types flow through server exports; type HTTP request and response parameters directly where needed. Do not introduce `any` or casts to suppress the deployment errors.
+
+Before changing code for a reported build failure, compare the revision cloned in the Vercel log with the actual source at that revision.
+
+**Why:** An uploaded full build log still compiled a pre-fix router annotation that no longer existed in the current workspace. Repeated errors from an older deployment were not evidence that the latest fix failed.
+
+**How to apply:** Inspect the log's cloned branch/revision and the corresponding file content. Distinguish publishing the latest branch changes from rebuilding an older deployment; do not make additional code changes solely to address a stale log.
