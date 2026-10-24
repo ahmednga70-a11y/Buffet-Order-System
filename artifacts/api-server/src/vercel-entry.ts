@@ -1,6 +1,6 @@
 import { pool } from "@workspace/db";
-import app from "./app";
-import { ensureSystemData } from "./lib/store";
+import app from "./app.js";
+import { ensureSystemData } from "./lib/store.js";
 
 let initialized = false;
 

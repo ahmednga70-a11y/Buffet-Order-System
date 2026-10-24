@@ -1,6 +1,6 @@
-import app from "./app";
-import { logger } from "./lib/logger";
-import { ensureSystemData } from "./lib/store";
+import app from "./app.js";
+import { logger } from "./lib/logger.js";
+import { ensureSystemData } from "./lib/store.js";
 
 const rawPort = process.env["PORT"];
 
