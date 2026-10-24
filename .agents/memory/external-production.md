@@ -17,9 +17,9 @@ Validate the complete source graph from the Vercel entry under NodeNext, without
 
 Preserve inferred types from Express application and router factories instead of adding explicit `Express` or `IRouter` wrapper annotations.
 
-**Why:** The external Vercel build reported missing inherited callable signatures and router methods for these explicit wrapper types while local checks passed.
+**Why:** The external Vercel build reported missing inherited callable signatures, router methods, and JSON response methods for explicit Express wrapper types while local checks passed.
 
-**How to apply:** Let factory return types flow through server exports; type HTTP request and response parameters directly where needed. Do not introduce `any` or casts to suppress the deployment errors.
+**How to apply:** Let factory return types flow through server exports. For small protocol-only endpoints, use native Node HTTP request/response types rather than explicitly widening to Express wrapper interfaces. Preserve status, content type, and body behavior. Do not introduce `any` or casts to suppress deployment errors.
 
 Before changing code for a reported build failure, compare the revision cloned in the Vercel log with the actual source at that revision.
 
