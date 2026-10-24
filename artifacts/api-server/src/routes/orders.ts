@@ -9,20 +9,13 @@ import {
   getOrdersByStatus,
   getUserById,
   MENU_ITEMS,
+  expediteOrder,
 } from "../lib/store.js";
-import { extractToken, verifyToken } from "../lib/jwt.js";
+import { getActiveSession } from "../lib/session.js";
+import { notifyWorkers } from "../lib/push.js";
 
 const router = Router();
 
-async function getActiveSession(req: Parameters<typeof extractToken>[0] extends never ? never : { headers: { authorization?: string } }) {
-  const token = extractToken(req.headers.authorization);
-  const session = token ? verifyToken(token) : null;
-  if (!session) return null;
-  const stored = await getUserById(session.id);
-  if (!stored?.isActive) return null;
-  if (session.role === "worker" && stored.projectId !== session.projectId) return null;
-  return session;
-}
 
 router.get("/orders", async (req, res) => {
   const user = await getActiveSession(req);
@@ -91,7 +84,24 @@ router.post("/orders", async (req, res) => {
   };
 
   const created = await createOrder(order);
+  await notifyWorkers(user.projectId, created.id);
   res.status(201).json(created);
+});
+
+router.patch("/orders/:id/urgent", async (req, res) => {
+  const user = await getActiveSession(req);
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (user.role !== "customer") { res.status(403).json({ error: "Only customers can expedite their orders" }); return; }
+  const order = await getOrderById(req.params.id!);
+  if (!order || order.userId !== user.id || order.projectId !== user.projectId) {
+    res.status(404).json({ error: "Order not found" }); return;
+  }
+  if (order.status !== "pending") { res.status(409).json({ error: "Only pending orders can be expedited" }); return; }
+  if (order.urgentAt) { res.json(order); return; }
+  const updated = await expediteOrder(order.id, user.id, user.projectId);
+  if (!updated) { res.status(409).json({ error: "Order changed; refresh and try again" }); return; }
+  await notifyWorkers(user.projectId, order.id, true);
+  res.json(updated);
 });
 
 router.patch("/orders/:id/deliver", async (req, res) => {

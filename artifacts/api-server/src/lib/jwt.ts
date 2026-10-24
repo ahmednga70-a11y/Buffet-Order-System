@@ -9,10 +9,11 @@ export interface JwtPayload {
   role: "customer" | "worker" | "admin";
   projectId: string;
   projectName: string;
+  exp?: number;
 }
 
-export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
+export function signToken(payload: JwtPayload, rememberMe = false): string {
+  return jwt.sign(payload, SECRET, { expiresIn: rememberMe ? "30d" : "7d" });
 }
 
 export function verifyToken(token: string): JwtPayload | null {

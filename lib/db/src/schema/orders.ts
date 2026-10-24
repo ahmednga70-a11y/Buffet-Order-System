@@ -14,6 +14,7 @@ export const ordersTable = pgTable(
     menuItemName: text("menu_item_name").notNull(),
     menuItemNameAr: text("menu_item_name_ar").notNull(),
     notes: text("notes"),
+    urgentAt: timestamp("urgent_at", { withTimezone: true }),
     status: text("status").$type<"pending" | "delivered" | "completed">().notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),

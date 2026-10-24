@@ -1,4 +1,4 @@
-import { and, db, desc, eq, gte, lt, ordersTable, projectsTable, usersTable } from "@workspace/db";
+import { and, db, desc, eq, gte, lt, sqlIsNull, ordersTable, projectsTable, usersTable } from "@workspace/db";
 import { hashPassword } from "./password.js";
 
 export interface User {
@@ -20,6 +20,7 @@ export interface Order {
   menuItemName: string;
   menuItemNameAr: string;
   notes?: string;
+  urgentAt?: string;
   status: "pending" | "delivered" | "completed";
   createdAt: string;
   deliveredAt?: string;
@@ -72,6 +73,7 @@ function toOrder(row: typeof ordersTable.$inferSelect): Order {
     createdAt: row.createdAt.toISOString(),
     deliveredAt: row.deliveredAt?.toISOString(),
     completedAt: row.completedAt?.toISOString(),
+    urgentAt: row.urgentAt?.toISOString(),
   };
 }
 
@@ -172,6 +174,7 @@ export async function createOrder(order: Order): Promise<Order> {
     createdAt: new Date(order.createdAt),
     deliveredAt: order.deliveredAt ? new Date(order.deliveredAt) : null,
     completedAt: order.completedAt ? new Date(order.completedAt) : null,
+    urgentAt: order.urgentAt ? new Date(order.urgentAt) : null,
   }).returning();
   return toOrder(row!);
 }
@@ -191,6 +194,16 @@ export function confirmOrder(id: string) {
 
 export function rejectOrder(id: string) {
   return updateOrder(id, { status: "pending", deliveredAt: null });
+}
+
+export async function expediteOrder(id: string, userId: string, projectId: string) {
+  const [row] = await db.update(ordersTable).set({ urgentAt: new Date() })
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId),
+      eq(ordersTable.projectId, projectId), eq(ordersTable.status, "pending"),
+      // Atomic guard prevents repeated notifications from concurrent taps.
+      sqlIsNull(ordersTable.urgentAt)))
+    .returning();
+  return row ? toOrder(row) : undefined;
 }
 
 export async function getOrderById(id: string): Promise<Order | undefined> {

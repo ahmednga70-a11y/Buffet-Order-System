@@ -27,15 +27,19 @@ import type {
   CreateWorkerRequest,
   DailyStats,
   ErrorResponse,
+  GetNotificationConfig200,
   GetOrdersParams,
   HealthStatus,
   LoginRequest,
   MenuItem,
+  NotificationDevice,
   Order,
   Project,
+  RegisterNotificationDevice200,
   RegisterRequest,
   UpdateUserRoleRequest,
-  UpdateWorkerRequest
+  UpdateWorkerRequest,
+  User
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -64,6 +68,352 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetCurrentUserUrl = () => {
+
+
+
+
+  return `/api/auth/me`
+}
+
+/**
+ * @summary Validate the saved session
+ */
+export const getCurrentUser = async ( options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getGetCurrentUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentUserQueryKey = () => {
+    return [
+    `/api/auth/me`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({ signal }) => getCurrentUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
+export type GetCurrentUserQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Validate the saved session
+ */
+
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetNotificationConfigUrl = () => {
+
+
+
+
+  return `/api/notifications/config`
+}
+
+export const getNotificationConfig = async ( options?: RequestInit): Promise<GetNotificationConfig200> => {
+
+  return customFetch<GetNotificationConfig200>(getGetNotificationConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationConfigQueryKey = () => {
+    return [
+    `/api/notifications/config`
+    ] as const;
+    }
+
+
+export const getGetNotificationConfigQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationConfig>>> = ({ signal }) => getNotificationConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationConfig>>>
+export type GetNotificationConfigQueryError = ErrorType<unknown>
+
+
+
+export function useGetNotificationConfig<TData = Awaited<ReturnType<typeof getNotificationConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRegisterNotificationDeviceUrl = () => {
+
+
+
+
+  return `/api/notifications/devices`
+}
+
+export const registerNotificationDevice = async (notificationDevice: NotificationDevice, options?: RequestInit): Promise<RegisterNotificationDevice200> => {
+
+  return customFetch<RegisterNotificationDevice200>(getRegisterNotificationDeviceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(notificationDevice)
+  }
+);}
+
+
+
+
+export const getRegisterNotificationDeviceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerNotificationDevice>>, TError,{data: BodyType<NotificationDevice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerNotificationDevice>>, TError,{data: BodyType<NotificationDevice>}, TContext> => {
+
+const mutationKey = ['registerNotificationDevice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerNotificationDevice>>, {data: BodyType<NotificationDevice>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerNotificationDevice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterNotificationDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof registerNotificationDevice>>>
+    export type RegisterNotificationDeviceMutationBody = BodyType<NotificationDevice>
+    export type RegisterNotificationDeviceMutationError = ErrorType<unknown>
+
+    export const useRegisterNotificationDevice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerNotificationDevice>>, TError,{data: BodyType<NotificationDevice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerNotificationDevice>>,
+        TError,
+        {data: BodyType<NotificationDevice>},
+        TContext
+      > => {
+      return useMutation(getRegisterNotificationDeviceMutationOptions(options));
+    }
+
+export const getUnregisterNotificationDeviceUrl = (id: string,) => {
+
+
+
+
+  return `/api/notifications/devices/${id}`
+}
+
+export const unregisterNotificationDevice = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUnregisterNotificationDeviceUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUnregisterNotificationDeviceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unregisterNotificationDevice>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unregisterNotificationDevice>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['unregisterNotificationDevice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unregisterNotificationDevice>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unregisterNotificationDevice(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnregisterNotificationDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof unregisterNotificationDevice>>>
+
+    export type UnregisterNotificationDeviceMutationError = ErrorType<unknown>
+
+    export const useUnregisterNotificationDevice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unregisterNotificationDevice>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unregisterNotificationDevice>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getUnregisterNotificationDeviceMutationOptions(options));
+    }
+
+export const getExpediteOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/urgent`
+}
+
+/**
+ * @summary Mark your pending order as urgent once
+ */
+export const expediteOrder = async (id: string, options?: RequestInit): Promise<Order> => {
+
+  return customFetch<Order>(getExpediteOrderUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getExpediteOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expediteOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof expediteOrder>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['expediteOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof expediteOrder>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  expediteOrder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExpediteOrderMutationResult = NonNullable<Awaited<ReturnType<typeof expediteOrder>>>
+
+    export type ExpediteOrderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark your pending order as urgent once
+ */
+export const useExpediteOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expediteOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof expediteOrder>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getExpediteOrderMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

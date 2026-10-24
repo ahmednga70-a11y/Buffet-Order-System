@@ -16,6 +16,7 @@ export interface Order {
   menuItemName: string;
   menuItemNameAr: string;
   notes?: string;
+  urgentAt?: string;
   status: OrderStatus;
   createdAt: string;
   completedAt?: string;

@@ -1,12 +1,13 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { Feather } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
 import React from "react";
-import { Platform, StyleSheet, useColorScheme } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, useColorScheme } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
 
 function NativeTabLayout() {
   return (
@@ -79,6 +80,10 @@ function ClassicTabLayout() {
 }
 
 export default function CustomerTabLayout() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (!user) return <Redirect href="/login" />;
+  if (user.role !== "customer") return <Redirect href="/(worker)" />;
   if (isLiquidGlassAvailable()) return <NativeTabLayout />;
   return <ClassicTabLayout />;
 }

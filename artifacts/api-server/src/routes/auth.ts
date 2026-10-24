@@ -2,11 +2,26 @@ import { Router } from "express";
 import { createUser, getProjectById, getUserByUsername, updateUserPassword } from "../lib/store.js";
 import { signToken } from "../lib/jwt.js";
 import { hashPassword, isPasswordHash, verifyPassword } from "../lib/password.js";
+import { getActiveSession } from "../lib/session.js";
 
 const router = Router();
 
+router.get("/auth/me", async (req, res) => {
+  const session = await getActiveSession(req);
+  if (!session) {
+    res.status(401).json({ error: "Session expired or account changed" });
+    return;
+  }
+  const { exp: _exp, ...user } = session;
+  // Never return JWT metadata or password fields.
+  res.json({
+    id: user.id, username: user.username, displayName: user.displayName,
+    role: user.role, projectId: user.projectId, projectName: user.projectName,
+  });
+});
+
 router.post("/auth/login", async (req, res) => {
-  const { username, password, projectId } = req.body as { username: string; password: string; projectId: string };
+  const { username, password, projectId, rememberMe } = req.body as { username: string; password: string; projectId: string; rememberMe?: boolean };
   if (!username || !password || !projectId) {
     res.status(400).json({ error: "Username, password and project are required" });
     return;
@@ -50,7 +65,7 @@ router.post("/auth/login", async (req, res) => {
     projectId: project.id,
     projectName: project.name,
   };
-  const token = signToken(sessionUser);
+  const token = signToken(sessionUser, rememberMe === true);
   res.json({ token, user: sessionUser });
 });
 

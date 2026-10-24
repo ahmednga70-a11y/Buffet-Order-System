@@ -13,6 +13,7 @@ export interface LoginRequest {
   username: string;
   password: string;
   projectId: string;
+  rememberMe?: boolean;
 }
 
 export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
@@ -130,6 +131,7 @@ export interface Order {
   menuItemName: string;
   menuItemNameAr: string;
   notes?: string;
+  urgentAt?: string;
   status: OrderStatus;
   createdAt: string;
   completedAt?: string;
@@ -138,6 +140,22 @@ export interface Order {
 export interface CreateOrderRequest {
   menuItemId: string;
   notes?: string;
+}
+
+export type NotificationDevicePlatform = typeof NotificationDevicePlatform[keyof typeof NotificationDevicePlatform];
+
+
+export const NotificationDevicePlatform = {
+  web: 'web',
+  expo: 'expo',
+} as const;
+
+export interface NotificationDevice {
+  platform: NotificationDevicePlatform;
+  endpoint?: string;
+  p256dh?: string;
+  auth?: string;
+  token?: string;
 }
 
 export type MenuItemCategory = typeof MenuItemCategory[keyof typeof MenuItemCategory];
@@ -191,6 +209,14 @@ export interface DailyStats {
 export interface ErrorResponse {
   error: string;
 }
+
+export type GetNotificationConfig200 = {
+  publicKey: string;
+};
+
+export type RegisterNotificationDevice200 = {
+  id: string;
+};
 
 export type GetOrdersParams = {
 status?: GetOrdersStatus;

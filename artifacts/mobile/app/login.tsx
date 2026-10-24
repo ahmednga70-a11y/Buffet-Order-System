@@ -1,6 +1,6 @@
 import { useGetProjects, useLogin } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,7 +21,7 @@ import { ProjectSelector } from "@/components/ProjectSelector";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const { login, user, isLoading: restoringSession } = useAuth();
   const loginMutation = useLogin();
   const params = useLocalSearchParams<{ projectId?: string }>();
   const { data: projects, isLoading: projectsLoading } = useGetProjects();
@@ -28,6 +29,8 @@ export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [loginError, setLoginError] = useState("");
   const [projectId, setProjectId] = useState(params.projectId ?? "");
 
   useEffect(() => {
@@ -35,27 +38,37 @@ export default function LoginScreen() {
   }, [projectId, projects]);
 
   const handleLogin = async () => {
+    setLoginError("");
     if (!projectId || !username.trim() || !password.trim()) {
+      setLoginError("من فضلك اختر المشروع وأدخل بيانات الدخول");
       Alert.alert("خطأ", "من فضلك اختر المشروع وأدخل بيانات الدخول");
       return;
     }
 
     try {
-      const result = await loginMutation.mutateAsync({ data: { username: username.trim(), password, projectId } });
+      const result = await loginMutation.mutateAsync({ data: { username: username.trim(), password, projectId, rememberMe } });
       const authUser = result.user;
-      await login(authUser, result.token);
+      await login(authUser, result.token, rememberMe);
       router.replace(authUser.role === "customer" ? "/(customer)" : "/(worker)");
-    } catch {
-      Alert.alert("خطأ", "اسم المستخدم أو كلمة المرور غلط");
+    } catch (error: unknown) {
+      const status = (error as { status?: number }).status;
+      const message = status === 401 ? "اسم المستخدم أو كلمة المرور غلط"
+        : status === 403 ? "الحساب موقوف أو غير مسموح له بالمشروع ده"
+        : "تعذّر تسجيل الدخول. تحقق من الاتصال والسماح بتخزين بيانات الموقع ثم حاول مرة أخرى.";
+      setLoginError(message);
+      Alert.alert("خطأ", message);
     }
   };
+
+  if (restoringSession) return <ActivityIndicator style={{ flex: 1 }} color={colors.light.primary} />;
+  if (user) return <Redirect href="/" />;
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.light.background }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[styles.container, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 20 }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 34 }]} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.iconContainer}>
             <Text style={styles.iconText}>☕</Text>
@@ -104,6 +117,22 @@ export default function LoginScreen() {
           </View>
 
           <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: rememberMe }}
+            accessibilityLabel="تذكرني على هذا الجهاز"
+            aria-checked={rememberMe}
+            testID="remember-me"
+            onPress={() => setRememberMe((value) => !value)}
+            style={styles.rememberRow}
+          >
+            <Feather name={rememberMe ? "check-square" : "square"} size={22} color={colors.light.primary} />
+            <View>
+              <Text style={styles.rememberText}>تذكرني على هذا الجهاز</Text>
+              <Text style={styles.rememberHint}>دخول محفوظ 30 يوم — لا تستخدمه على جهاز مشترك</Text>
+            </View>
+          </Pressable>
+          {loginError ? <Text accessibilityRole="alert" style={styles.loginError}>{loginError}</Text> : null}
+          <Pressable
             style={({ pressed }) => [styles.loginBtn, pressed && { opacity: 0.85 }]}
             onPress={handleLogin}
             disabled={loginMutation.isPending}
@@ -122,13 +151,17 @@ export default function LoginScreen() {
             <Text style={styles.registerLinkText}>مش عندك حساب؟ سجل هنا</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24 },
+  loginError: { fontFamily: "Inter_500Medium", fontSize: 13, color: colors.light.destructive, textAlign: "right" },
+  rememberRow: { flexDirection: "row-reverse", alignItems: "center", gap: 10, paddingVertical: 8 },
+  rememberText: { fontFamily: "Inter_500Medium", fontSize: 14, color: colors.light.foreground, textAlign: "right" },
+  rememberHint: { fontFamily: "Inter_400Regular", fontSize: 11, color: colors.light.mutedForeground, textAlign: "right" },
+  container: { flexGrow: 1, paddingHorizontal: 24 },
   header: { alignItems: "center", marginBottom: 48 },
   iconContainer: {
     width: 88,

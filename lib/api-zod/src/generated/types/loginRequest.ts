@@ -10,4 +10,5 @@ export interface LoginRequest {
   username: string;
   password: string;
   projectId: string;
+  rememberMe?: boolean;
 }

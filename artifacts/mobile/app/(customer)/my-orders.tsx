@@ -3,6 +3,7 @@ import {
   useConfirmOrder,
   useRejectOrder,
   getGetOrdersQueryKey,
+  useExpediteOrder,
 } from "@workspace/api-client-react";
 import type { Order } from "@workspace/api-client-react";
 import * as Haptics from "expo-haptics";
@@ -52,6 +53,16 @@ export default function MyOrdersScreen() {
 
   const confirmMutation = useConfirmOrder();
   const rejectMutation = useRejectOrder();
+  const expediteMutation = useExpediteOrder();
+
+  const handleExpedite = async (id: string) => {
+    try {
+      await expediteMutation.mutateAsync({ id });
+      await queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
+    } catch {
+      Alert.alert("تعذّر الاستعجال", "تأكد من الاتصال وحدّث الطلبات؛ لا يمكن استعجال طلب تم تسليمه.");
+    }
+  };
 
   // Track delivered order IDs to detect new deliveries and show a notification
   const prevDeliveredIds = useRef<Set<string>>(new Set());
@@ -115,9 +126,9 @@ export default function MyOrdersScreen() {
       <View style={[styles.card, isDelivered && styles.cardDelivered]}>
         <View style={styles.cardHeader}>
           <Text style={styles.itemName}>{item.menuItemNameAr}</Text>
-          <View style={[styles.badge, statusBadgeStyle(item.status)]}>
-            <Text style={[styles.badgeText, isDelivered && styles.badgeTextDelivered]}>
-              {statusLabel(item.status)}
+          <View style={[styles.badge, item.status === "pending" && item.urgentAt ? styles.badgeUrgent : statusBadgeStyle(item.status)]}>
+            <Text style={[styles.badgeText, (isDelivered || (item.status === "pending" && !!item.urgentAt)) && styles.badgeTextDelivered]}>
+              {item.status === "pending" && item.urgentAt ? "مستعجل" : statusLabel(item.status)}
             </Text>
           </View>
         </View>
@@ -129,6 +140,15 @@ export default function MyOrdersScreen() {
             ? `وصل الساعة ${formatTime(item.completedAt)}`
             : `طلبته الساعة ${formatTime(item.createdAt)}`}
         </Text>
+
+        {item.status === "pending" && (
+          item.urgentAt ? <Text style={styles.urgentText}>طلب مستعجل — تم إرسال طلب الاستعجال</Text> : (
+            <Pressable style={styles.urgentButton} testID={`expedite-${item.id}`}
+              onPress={() => handleExpedite(item.id)} disabled={expediteMutation.isPending} accessibilityRole="button">
+              <Text style={styles.urgentText}>{expediteMutation.isPending && expediteMutation.variables?.id === item.id ? "جارٍ الإرسال…" : "استعجال الطلب وتنبيه العامل"}</Text>
+            </Pressable>
+          )
+        )}
 
         {isDelivered && (
           <View style={styles.actionRow}>
@@ -191,6 +211,8 @@ export default function MyOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  urgentButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.light.destructive, marginTop: 8 },
+  urgentText: { fontFamily: "Inter_600SemiBold", color: colors.light.destructive, fontSize: 13, textAlign: "right", marginTop: 4 },
   container: { flex: 1, backgroundColor: colors.light.background },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   title: {
@@ -228,6 +250,7 @@ const styles = StyleSheet.create({
   badgeDone: { backgroundColor: "#E8F5E9" },
   badgePending: { backgroundColor: "#FFF3E0" },
   badgeDelivered: { backgroundColor: colors.light.primary },
+  badgeUrgent: { backgroundColor: colors.light.destructive },
   badgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.light.foreground },
   badgeTextDelivered: { color: "#fff" },
   notes: {

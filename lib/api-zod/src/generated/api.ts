@@ -9,6 +9,67 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Validate the saved session
+ */
+export const GetCurrentUserResponse = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['customer', 'worker', 'admin']),
+  "projectId": zod.string(),
+  "projectName": zod.string()
+})
+
+
+export const GetNotificationConfigResponse = zod.object({
+  "publicKey": zod.string()
+})
+
+
+export const RegisterNotificationDeviceBody = zod.object({
+  "platform": zod.enum(['web', 'expo']),
+  "endpoint": zod.string().optional(),
+  "p256dh": zod.string().optional(),
+  "auth": zod.string().optional(),
+  "token": zod.string().optional()
+})
+
+export const RegisterNotificationDeviceResponse = zod.object({
+  "id": zod.string()
+})
+
+
+export const UnregisterNotificationDeviceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UnregisterNotificationDeviceResponse = zod.void()
+
+
+/**
+ * @summary Mark your pending order as urgent once
+ */
+export const ExpediteOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ExpediteOrderResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userDisplayName": zod.string(),
+  "projectId": zod.string(),
+  "menuItemId": zod.string(),
+  "menuItemName": zod.string(),
+  "menuItemNameAr": zod.string(),
+  "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed']),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().optional()
+})
+
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -22,7 +83,8 @@ export const HealthCheckResponse = zod.object({
 export const LoginBody = zod.object({
   "username": zod.string(),
   "password": zod.string(),
-  "projectId": zod.string()
+  "projectId": zod.string(),
+  "rememberMe": zod.boolean().optional()
 })
 
 export const LoginResponse = zod.object({
@@ -195,6 +257,7 @@ export const GetOrdersResponseItem = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -219,6 +282,7 @@ export const CreateOrderResponse = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -241,6 +305,7 @@ export const DeliverOrderResponse = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -263,6 +328,7 @@ export const RejectOrderResponse = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -285,6 +351,7 @@ export const ConfirmOrderResponse = zod.object({
   "menuItemName": zod.string(),
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()

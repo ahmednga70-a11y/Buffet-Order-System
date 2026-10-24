@@ -4,7 +4,7 @@ import {
   getGetOrdersQueryKey,
 } from "@workspace/api-client-react";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import colors from "@/constants/colors";
+import { PushNotificationControl } from "@/components/PushNotificationControl";
 
 function formatTime(iso: string) {
   const date = new Date(iso);
@@ -31,7 +32,8 @@ export default function WorkerOrdersScreen() {
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const { logout } = useAuth();
   const queryClient = useQueryClient();
-  const prevCountRef = useRef<number>(0);
+  const previousOrdersRef = useRef<Map<string, string | undefined> | null>(null);
+  const [orderNotice, setOrderNotice] = useState("");
 
   const { data: orders, isLoading, refetch, isRefetching } = useGetOrders(
     { status: "pending" },
@@ -41,14 +43,17 @@ export default function WorkerOrdersScreen() {
   const deliverOrderMutation = useDeliverOrder();
 
   useEffect(() => {
-    const count = orders?.length ?? 0;
-    if (count > prevCountRef.current && prevCountRef.current !== 0) {
+    if (!orders) return;
+    const previous = previousOrdersRef.current;
+    if (previous && orders.some((order) => !previous.has(order.id) || (order.urgentAt && !previous.get(order.id)))) {
+      setOrderNotice(orders.some((order) => order.urgentAt && !previous.get(order.id))
+        ? "فيه طلب مستعجل — راجع الطلبات المميزة بالأحمر" : "وصل طلب جديد");
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
     }
-    prevCountRef.current = count;
-  }, [orders?.length]);
+    previousOrdersRef.current = new Map(orders.map((order) => [order.id, order.urgentAt]));
+  }, [orders]);
 
   const handleDeliver = (id: string, name: string, personName: string) => {
     Alert.alert("تأكيد التسليم", `هتسلم "${name}" لـ ${personName}؟`, [
@@ -69,13 +74,14 @@ export default function WorkerOrdersScreen() {
   };
 
   const renderItem = ({ item }: { item: NonNullable<typeof orders>[0] }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, item.urgentAt ? styles.urgentCard : undefined]}>
       <View style={styles.cardRow}>
         <View style={styles.cardInfo}>
           <View style={styles.pendingDot} />
           <View>
             <Text style={styles.personName}>{item.userDisplayName}</Text>
             <Text style={styles.itemName}>{item.menuItemNameAr}</Text>
+            {item.urgentAt ? <Text style={styles.urgentLabel}>مستعجل — العميل طلب تنبيه</Text> : null}
             {item.notes ? <Text style={styles.notes}>📝 {item.notes}</Text> : null}
             <Text style={styles.time}>الساعة {formatTime(item.createdAt)}</Text>
           </View>
@@ -107,13 +113,17 @@ export default function WorkerOrdersScreen() {
         </Pressable>
       </View>
 
+      <PushNotificationControl />
+      {orderNotice ? <Pressable onPress={() => setOrderNotice("")} style={styles.notice} accessibilityRole="button">
+        <Text style={styles.noticeText}>{orderNotice} — إخفاء</Text>
+      </Pressable> : null}
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.light.primary} />
         </View>
       ) : (
         <FlatList
-          data={orders || []}
+          data={[...(orders || [])].sort((a, b) => Number(!!b.urgentAt) - Number(!!a.urgentAt))}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: Platform.OS === "web" ? 100 : 120 }}
@@ -135,6 +145,10 @@ export default function WorkerOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  notice: { marginHorizontal: 16, marginBottom: 10, padding: 12, borderRadius: 8, backgroundColor: colors.light.secondary },
+  noticeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.light.primary, textAlign: "right" },
+  urgentCard: { borderColor: colors.light.destructive, borderLeftColor: colors.light.destructive },
+  urgentLabel: { color: colors.light.destructive, fontFamily: "Inter_700Bold", fontSize: 13, marginBottom: 4 },
   container: { flex: 1, backgroundColor: colors.light.background },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: {

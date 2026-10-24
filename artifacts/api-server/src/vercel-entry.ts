@@ -40,6 +40,18 @@ async function initDatabaseSchema() {
     CREATE INDEX IF NOT EXISTS orders_project_id_idx ON orders(project_id);
     CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
     CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders(created_at);
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS urgent_at TIMESTAMPTZ;
+    CREATE TABLE IF NOT EXISTS push_settings (
+      id TEXT PRIMARY KEY, encrypted_data TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS push_devices (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL, encrypted_data TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS push_devices_project_idx ON push_devices(project_id);
   `);
 }
 

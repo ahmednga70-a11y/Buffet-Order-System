@@ -1,6 +1,6 @@
 import { useGetProjects, useRegister } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,7 +21,7 @@ import { ProjectSelector } from "@/components/ProjectSelector";
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const { login, user, isLoading: restoringSession } = useAuth();
   const registerMutation = useRegister();
   const params = useLocalSearchParams<{ projectId?: string }>();
   const { data: projects, isLoading: projectsLoading } = useGetProjects();
@@ -71,6 +71,9 @@ export default function RegisterScreen() {
       Alert.alert("خطأ في التسجيل", message);
     }
   };
+
+  if (restoringSession) return <ActivityIndicator style={{ flex: 1 }} color={colors.light.primary} />;
+  if (user) return <Redirect href="/" />;
 
   return (
     <KeyboardAvoidingView
