@@ -1,4 +1,5 @@
 import { pool } from "@workspace/db";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import app from "./app.js";
 import { ensureSystemData } from "./lib/store.js";
 
@@ -42,11 +43,11 @@ async function initDatabaseSchema() {
   `);
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!initialized) {
     await initDatabaseSchema();
     await ensureSystemData();
     initialized = true;
   }
-  return app(req, res);
+  app(req, res);
 }
