@@ -20,6 +20,7 @@
       "versionCode": 1
     },
     "web": {
+      "lang": "ar",
       "favicon": "./assets/images/icon.png"
     },
     "extra": {
