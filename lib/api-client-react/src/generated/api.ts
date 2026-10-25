@@ -1292,6 +1292,76 @@ export const useCreateOrder = <TError = ErrorType<unknown>,
       return useMutation(getCreateOrderMutationOptions(options));
     }
 
+export const getReadyOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/ready`
+}
+
+/**
+ * @summary Mark a pending order ready for pickup (worker or admin)
+ */
+export const readyOrder = async (id: string, options?: RequestInit): Promise<Order> => {
+
+  return customFetch<Order>(getReadyOrderUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getReadyOrderMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readyOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof readyOrder>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['readyOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof readyOrder>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  readyOrder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReadyOrderMutationResult = NonNullable<Awaited<ReturnType<typeof readyOrder>>>
+
+    export type ReadyOrderMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Mark a pending order ready for pickup (worker or admin)
+ */
+export const useReadyOrder = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readyOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof readyOrder>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getReadyOrderMutationOptions(options));
+    }
+
 export const getDeliverOrderUrl = (id: string,) => {
 
 

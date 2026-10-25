@@ -69,17 +69,30 @@ export async function unregisterDevice(userId: string, id: string) {
 }
 
 export async function notifyWorkers(projectId: string, orderId: string, urgent = false) {
+  return sendOrderNotification(projectId, orderId, urgent ? "urgent" : "order");
+}
+
+export async function notifyCustomer(projectId: string, userId: string, orderId: string, event: "ready" | "delivered") {
+  return sendOrderNotification(projectId, orderId, event, userId);
+}
+
+async function sendOrderNotification(projectId: string, orderId: string, event: "order" | "urgent" | "ready" | "delivered", userId?: string) {
   try {
+    const urgent = event === "urgent";
     const result = await pool.query(
       `SELECT d.id,d.encrypted_data FROM push_devices d JOIN users u ON u.id=d.user_id
        WHERE d.project_id=$1 AND d.expires_at>NOW() AND u.is_active=true
-       AND (u.role='admin' OR (u.role='worker' AND u.project_id=d.project_id))`,
-      [projectId],
+       AND ${userId
+         ? "d.user_id=$2 AND u.role='customer'"
+         : "(u.role='admin' OR (u.role='worker' AND u.project_id=d.project_id))"}`,
+      userId ? [projectId, userId] : [projectId],
     );
     if (!result.rows.length) return;
-    const title = urgent ? "طلب مستعجل" : "طلب جديد";
+    const title = event === "ready" ? "طلبك جاهز" : event === "delivered" ? "تم تسليم طلبك" : urgent ? "طلب مستعجل" : "طلب جديد";
     // Keep lock-screen payloads generic: no customer name, notes or credentials.
-    const body = urgent ? "أحد العملاء استعجل طلبه — راجع الطلبات المنتظرة" : "فيه طلب جديد في مشروعك — افتح الطلبات";
+    const body = event === "ready" ? "طلبك جاهز — تقدر تستلمه من البوفيه"
+      : event === "delivered" ? "العامل سجّل تسليم طلبك — افتح طلباتي لتأكيد الاستلام"
+      : urgent ? "أحد العملاء استعجل طلبه — راجع الطلبات المنتظرة" : "فيه طلب جديد في مشروعك — افتح الطلبات";
     const keys = result.rows.some((row) => decrypt<Device>(row.encrypted_data as string).platform === "web")
       ? await getPushKeys() : null;
     for (let start = 0; start < result.rows.length; start += 8) {
@@ -89,7 +102,7 @@ export async function notifyWorkers(projectId: string, orderId: string, urgent =
           if (device.platform === "web" && keys) {
             await webpush.sendNotification({
               endpoint: device.endpoint!, keys: { p256dh: device.p256dh!, auth: device.auth! },
-            }, JSON.stringify({ title, body, tag: `${urgent ? "urgent" : "order"}-${orderId}`, url: "/" }), {
+            }, JSON.stringify({ title, body, tag: `${event}-${orderId}`, url: userId ? "/my-orders" : "/" }), {
               vapidDetails: keys, TTL: 3600, urgency: "high", timeout: 6000,
             });
           } else if (device.platform === "expo") {
@@ -98,7 +111,7 @@ export async function notifyWorkers(projectId: string, orderId: string, urgent =
                 "Content-Type": "application/json",
                 ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
               },
-              body: JSON.stringify({ to: device.token, title, body, sound: "door_bell.mp3", channelId: "orders-doorbell-v1", priority: "high", data: { orderId, urgent } }),
+              body: JSON.stringify({ to: device.token, title, body, sound: "door_bell.mp3", channelId: "orders-doorbell-v1", priority: "high", data: { orderId, urgent, event, url: userId ? "/my-orders" : "/" } }),
               signal: AbortSignal.timeout(6000),
             });
             const ticket = await response.json() as { data?: { status?: string; details?: { error?: string } } };
@@ -118,6 +131,6 @@ export async function notifyWorkers(projectId: string, orderId: string, urgent =
     }
   } catch {
     // Orders are still saved if a push provider is unavailable.
-    logger.error("Unable to send worker notifications; check push configuration and database");
+    logger.error("Unable to send order notifications; check push configuration and database");
   }
 }

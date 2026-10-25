@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createOrder,
   deliverOrder,
+  readyOrder,
   confirmOrder,
   rejectOrder,
   getOrderById,
@@ -12,7 +13,7 @@ import {
   expediteOrder,
 } from "../lib/store.js";
 import { getActiveSession } from "../lib/session.js";
-import { notifyWorkers } from "../lib/push.js";
+import { notifyWorkers, notifyCustomer } from "../lib/push.js";
 
 const router = Router();
 
@@ -124,6 +125,30 @@ router.patch("/orders/:id/urgent", async (req, res) => {
   res.json(updated);
 });
 
+router.patch("/orders/:id/ready", async (req, res) => {
+  const user = await getActiveSession(req);
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (user.role !== "worker" && user.role !== "admin") {
+    res.status(403).json({ error: "Only workers can mark orders ready" }); return;
+  }
+  const order = await getOrderById(req.params.id!);
+  if (!order || order.projectId !== user.projectId) {
+    res.status(404).json({ error: "Order not found" }); return;
+  }
+  if (order.status !== "pending") {
+    res.status(409).json({ error: "Only pending orders can be ready" }); return;
+  }
+  if (order.readyAt) { res.json(order); return; }
+  const updated = await readyOrder(order.id, user.projectId);
+  if (!updated) {
+    const latest = await getOrderById(order.id);
+    if (latest?.status === "pending" && latest.readyAt) { res.json(latest); return; }
+    res.status(409).json({ error: "Order changed; refresh and try again" }); return;
+  }
+  await notifyCustomer(user.projectId, order.userId, order.id, "ready");
+  res.json(updated);
+});
+
 router.patch("/orders/:id/deliver", async (req, res) => {
   const user = await getActiveSession(req);
 
@@ -153,6 +178,7 @@ router.patch("/orders/:id/deliver", async (req, res) => {
     return;
   }
 
+  await notifyCustomer(user.projectId, order.userId, order.id, "delivered");
   res.json(updated);
 });
 
@@ -204,12 +230,13 @@ router.patch("/orders/:id/confirm", async (req, res) => {
     res.status(404).json({ error: "Order not found" });
     return;
   }
-  if (order.status !== "delivered") {
-    res.status(409).json({ error: "Only delivered orders can be confirmed" });
+  const pickup = order.status === "pending" && !!order.readyAt;
+  if (order.status !== "delivered" && !pickup) {
+    res.status(409).json({ error: "Only delivered or ready orders can be confirmed" });
     return;
   }
 
-  const updated = await confirmOrder(order.id);
+  const updated = await confirmOrder(order.id, pickup);
   if (!updated) {
     res.status(409).json({ error: "Order changed; refresh and try again" });
     return;

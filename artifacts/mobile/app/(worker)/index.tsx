@@ -1,5 +1,6 @@
 import {
   useDeliverOrder,
+  useReadyOrder,
   useGetOrders,
   getGetOrdersQueryKey,
   getGetDailyStatsQueryKey,
@@ -46,6 +47,20 @@ export default function WorkerOrdersScreen() {
   );
 
   const deliverOrderMutation = useDeliverOrder();
+  const readyMutation = useReadyOrder();
+
+  const handleReady = async (id: string) => {
+    setDeliveryError("");
+    try {
+      const updated = await readyMutation.mutateAsync({ id });
+      queryClient.setQueryData<Order[]>(getGetOrdersQueryKey({ status: "pending" }),
+        (current) => current?.map((order) => order.id === id ? updated : order));
+      setOrderNotice("الطلب جاهز للاستلام — تم طلب إرسال تنبيه لصاحب الطلب");
+    } catch {
+      setDeliveryError("تعذّر تسجيل جاهزية الطلب. تأكد من الاتصال وحدّث القائمة.");
+    }
+    await queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
+  };
 
   useEffect(() => {
     if (!orders) return;
@@ -98,15 +113,22 @@ export default function WorkerOrdersScreen() {
             <Text style={styles.time}>الساعة {formatTime(item.createdAt)}</Text>
           </View>
         </View>
+        <View style={styles.orderButtons}>
+        <Pressable testID={`ready-order-${item.id}`} accessibilityRole="button"
+          style={styles.backButton} disabled={!!item.readyAt || readyMutation.isPending || deliverOrderMutation.isPending}
+          onPress={() => handleReady(item.id)}>
+          <Text style={styles.noticeText}>{item.readyAt ? "جاهز للاستلام" : readyMutation.isPending && readyMutation.variables?.id === item.id ? "جارٍ الحفظ…" : "الطلب جاهز"}</Text>
+        </Pressable>
         <Pressable
           testID={`deliver-order-${item.id}`}
           accessibilityRole="button"
           style={({ pressed }) => [styles.doneBtn, pressed && { opacity: 0.8 }]}
           onPress={() => { setDeliveryError(""); setDeliveryTarget(item.id); }}
-          disabled={deliverOrderMutation.isPending}
+          disabled={deliverOrderMutation.isPending || readyMutation.isPending}
         >
-          <Text style={styles.doneBtnText}>{deliverOrderMutation.isPending && deliverOrderMutation.variables?.id === item.id ? "جارٍ التسليم…" : "سلّمت ✓"}</Text>
+          <Text style={styles.doneBtnText}>{deliverOrderMutation.isPending && deliverOrderMutation.variables?.id === item.id ? "جارٍ التسليم…" : "تم التسليم"}</Text>
         </Pressable>
+        </View>
       </View>
       {deliveryTarget === item.id ? <View style={styles.deliveryConfirmation}>
         <Text style={styles.deliveryPrompt}>تأكيد تسليم «{item.menuItemNameAr}» إلى {item.userDisplayName}؟</Text>
@@ -186,6 +208,7 @@ export default function WorkerOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  orderButtons: { gap: 8, alignItems: "stretch", maxWidth: 140 },
   deliveryConfirmation: { paddingTop: 14, gap: 10 },
   deliveryPrompt: { fontFamily: "Inter_600SemiBold", color: colors.light.foreground, fontSize: 14, textAlign: "right" },
   deliveryActions: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 },

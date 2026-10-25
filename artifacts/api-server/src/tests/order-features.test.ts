@@ -151,8 +151,9 @@ test("cancellation is owned, scoped, retained, idempotent and cannot race delive
   }
 });
 
-test("push configuration is worker-only, stable, encrypted and rejects unsafe endpoints", async () => {
-  assert.equal((await request("/notifications/config", tokens.customer)).status, 403);
+test("push configuration supports authenticated customers and workers, is stable and encrypted, and rejects unsafe endpoints", async () => {
+  assert.equal((await request("/notifications/config")).status, 401);
+  assert.equal((await request("/notifications/config", tokens.customer)).status, 200);
   const first = await request("/notifications/config", tokens.worker);
   assert.equal(first.status, 200);
   const config = await first.json() as { publicKey: string };
@@ -216,5 +217,76 @@ test("push configuration is worker-only, stable, encrypted and rejects unsafe en
   } finally {
     webpush.sendNotification = originalSend;
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("ready and delivered notify only the owner; ready persists, is idempotent and supports pickup", async () => {
+  const originalFetch = globalThis.fetch;
+  const sent: { to: string; title: string; body: string; sound: string; data: { event: string } }[] = [];
+  globalThis.fetch = async (input, init) => {
+    if (String(input) === "https://exp.host/--/api/v2/push/send") {
+      sent.push(JSON.parse(String(init?.body)));
+      return new Response(JSON.stringify({ data: { status: "ok" } }), { status: 200 });
+    }
+    return originalFetch(input, init);
+  };
+  // Remove only this test project's leftover fixture worker subscriptions.
+  await pool.query("DELETE FROM push_devices WHERE project_id=ANY($1::text[])", [[projectA, projectB]]);
+  try {
+    for (const name of ["customer", "other", "worker"] as const) {
+      assert.equal((await request("/notifications/devices", tokens[name], "POST",
+        { platform: "expo", token: `ExpoPushToken[${name}-${suffix}]` })).status, 200);
+    }
+    const create = async () => {
+      const response = await request("/orders", tokens.customer, "POST", { menuItemId: "tea", notes: "secret-note" });
+      assert.equal(response.status, 201);
+      return await response.json() as { id: string };
+    };
+    const order = await create();
+    sent.length = 0;
+    assert.equal((await request(`/orders/${order.id}/ready`, tokens.customer, "PATCH")).status, 403);
+    const crossCustomer = await login("customer", projectB);
+    const crossOrder = await (await request("/orders", crossCustomer, "POST", { menuItemId: "tea" })).json() as { id: string };
+    assert.equal((await request(`/orders/${crossOrder.id}/ready`, tokens.worker, "PATCH")).status, 404);
+    const readyResponses = await Promise.all([0, 1].map(() => request(`/orders/${order.id}/ready`, tokens.worker, "PATCH")));
+    assert.ok(readyResponses.every((response) => response.status === 200));
+    assert.equal(sent.length, 1, "concurrent readiness sends just once");
+    assert.equal(sent[0]!.to, `ExpoPushToken[customer-${suffix}]`);
+    assert.equal(sent[0]!.data.event, "ready");
+    assert.equal(sent[0]!.sound, "door_bell.mp3");
+    assert.equal(JSON.stringify(sent).includes("secret-note"), false);
+    const ready = await (await request(`/orders/${order.id}/ready`, tokens.worker, "PATCH")).json() as { readyAt: string; status: string };
+    assert.ok(ready.readyAt);
+    assert.equal(ready.status, "pending");
+    assert.equal(sent.length, 1, "repeat does not send another push");
+    const rows = await (await request("/orders?mine=true", tokens.customer)).json() as { id: string; readyAt?: string }[];
+    assert.equal(rows.find((row) => row.id === order.id)?.readyAt, ready.readyAt);
+    assert.equal((await request(`/orders/${order.id}/confirm`, tokens.other, "PATCH")).status, 404);
+    assert.equal((await request(`/orders/${order.id}/confirm`, tokens.customer, "PATCH")).status, 200);
+    assert.equal((await request(`/orders/${order.id}/deliver`, tokens.worker, "PATCH")).status, 409);
+    assert.equal(sent.length, 1, "pickup is not a worker delivery event");
+
+    const delivery = await create();
+    sent.length = 0;
+    assert.equal((await request(`/orders/${delivery.id}/confirm`, tokens.customer, "PATCH")).status, 409);
+    assert.equal((await request(`/orders/${delivery.id}/ready`, tokens.worker, "PATCH")).status, 200);
+    assert.equal((await request(`/orders/${delivery.id}/deliver`, tokens.worker, "PATCH")).status, 200);
+    assert.deepEqual(sent.map((message) => message.data.event), ["ready", "delivered"]);
+    assert.ok(sent.every((message) => message.to === `ExpoPushToken[customer-${suffix}]`));
+    assert.equal((await request(`/orders/${delivery.id}/deliver`, tokens.worker, "PATCH")).status, 409);
+    assert.equal(sent.length, 2);
+    assert.equal((await request(`/orders/${delivery.id}/reject`, tokens.customer, "PATCH")).status, 200);
+    const rejected = await (await request("/orders?mine=true", tokens.customer)).json() as { id: string; readyAt?: string }[];
+    assert.equal(rejected.find((row) => row.id === delivery.id)?.readyAt, undefined);
+    assert.equal((await request(`/orders/${delivery.id}/ready`, tokens.worker, "PATCH")).status, 200);
+    assert.equal(sent.length, 3, "a rejected and prepared-again order can notify again");
+    const cancelled = await create();
+    sent.length = 0;
+    await request(`/orders/${cancelled.id}/cancel`, tokens.customer, "PATCH");
+    assert.equal((await request(`/orders/${cancelled.id}/ready`, tokens.worker, "PATCH")).status, 409);
+    assert.equal(sent.length, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await pool.query("DELETE FROM push_devices WHERE project_id=ANY($1::text[])", [[projectA, projectB]]);
   }
 });

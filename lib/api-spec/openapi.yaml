@@ -399,6 +399,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Order"
 
+  /orders/{id}/ready:
+    patch:
+      operationId: readyOrder
+      tags: [orders]
+      summary: Mark a pending order ready for pickup (worker or admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order ready for pickup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "409":
+          description: Order is no longer pending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders/{id}/deliver:
     patch:
       operationId: deliverOrder
@@ -693,6 +718,8 @@ components:
         notes:
           type: string
         urgentAt:
+          type: string
+        readyAt:
           type: string
         status:
           type: string

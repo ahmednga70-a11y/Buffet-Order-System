@@ -41,6 +41,7 @@ async function initDatabaseSchema() {
     CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
     CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders(created_at);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS urgent_at TIMESTAMPTZ;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS ready_at TIMESTAMPTZ;
     CREATE TABLE IF NOT EXISTS push_settings (
       id TEXT PRIMARY KEY, encrypted_data TEXT NOT NULL
     );

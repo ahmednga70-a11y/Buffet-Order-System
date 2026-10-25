@@ -63,6 +63,7 @@ export const CancelOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -86,6 +87,7 @@ export const ExpediteOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -281,6 +283,7 @@ export const GetOrdersResponseItem = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -306,6 +309,31 @@ export const CreateOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
+  "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Mark a pending order ready for pickup (worker or admin)
+ */
+export const ReadyOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ReadyOrderResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userDisplayName": zod.string(),
+  "projectId": zod.string(),
+  "menuItemId": zod.string(),
+  "menuItemName": zod.string(),
+  "menuItemNameAr": zod.string(),
+  "notes": zod.string().optional(),
+  "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -329,6 +357,7 @@ export const DeliverOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -352,6 +381,7 @@ export const RejectOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()
@@ -375,6 +405,7 @@ export const ConfirmOrderResponse = zod.object({
   "menuItemNameAr": zod.string(),
   "notes": zod.string().optional(),
   "urgentAt": zod.string().optional(),
+  "readyAt": zod.string().optional(),
   "status": zod.enum(['pending', 'delivered', 'completed', 'cancelled']),
   "createdAt": zod.string(),
   "completedAt": zod.string().optional()

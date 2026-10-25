@@ -1,4 +1,4 @@
-import { and, db, desc, eq, gte, lt, sqlIsNull, ordersTable, projectsTable, usersTable } from "@workspace/db";
+import { and, db, desc, eq, gte, lt, sqlIsNull, sqlIsNotNull, ordersTable, projectsTable, usersTable } from "@workspace/db";
 import { hashPassword } from "./password.js";
 
 export interface User {
@@ -21,6 +21,7 @@ export interface Order {
   menuItemNameAr: string;
   notes?: string;
   urgentAt?: string;
+  readyAt?: string;
   status: "pending" | "delivered" | "completed" | "cancelled";
   createdAt: string;
   deliveredAt?: string;
@@ -75,6 +76,7 @@ function toOrder(row: typeof ordersTable.$inferSelect): Order {
     deliveredAt: row.deliveredAt?.toISOString(),
     completedAt: row.completedAt?.toISOString(),
     urgentAt: row.urgentAt?.toISOString(),
+    readyAt: row.readyAt?.toISOString(),
   };
 }
 
@@ -176,6 +178,7 @@ export async function createOrder(order: Order): Promise<Order> {
     deliveredAt: order.deliveredAt ? new Date(order.deliveredAt) : null,
     completedAt: order.completedAt ? new Date(order.completedAt) : null,
     urgentAt: order.urgentAt ? new Date(order.urgentAt) : null,
+    readyAt: order.readyAt ? new Date(order.readyAt) : null,
   }).returning();
   return toOrder(row!);
 }
@@ -190,12 +193,31 @@ export function deliverOrder(id: string) {
   return updateOrder(id, "pending", { status: "delivered", deliveredAt: new Date() });
 }
 
-export function confirmOrder(id: string) {
+export async function readyOrder(id: string, projectId: string) {
+  const [row] = await db.update(ordersTable).set({ readyAt: new Date() })
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.projectId, projectId),
+      eq(ordersTable.status, "pending"), sqlIsNull(ordersTable.readyAt))).returning();
+  return row ? toOrder(row) : undefined;
+}
+
+export function confirmOrder(id: string, pickup = false) {
+  // Ready pickup cannot race a cancellation, rejection or worker delivery.
+  if (pickup) {
+    return confirmPickup(id);
+  }
   return updateOrder(id, "delivered", { status: "completed", completedAt: new Date() });
 }
 
+async function confirmPickup(id: string) {
+  const [row] = await db.update(ordersTable)
+    .set({ status: "completed", deliveredAt: new Date(), completedAt: new Date() })
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.status, "pending"),
+      sqlIsNotNull(ordersTable.readyAt))).returning();
+  return row ? toOrder(row) : undefined;
+}
+
 export function rejectOrder(id: string) {
-  return updateOrder(id, "delivered", { status: "pending", deliveredAt: null });
+  return updateOrder(id, "delivered", { status: "pending", deliveredAt: null, readyAt: null });
 }
 
 export async function cancelOrder(id: string, userId: string, projectId: string) {

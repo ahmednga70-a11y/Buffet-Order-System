@@ -6,8 +6,8 @@ import { RegisterNotificationDeviceBody } from "@workspace/api-zod/schemas";
 const router = Router();
 router.get("/notifications/config", async (req, res) => {
   const user = await getActiveSession(req);
-  if (!user || user.role === "customer") {
-    res.status(user ? 403 : 401).json({ error: "Worker account required" });
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
   const host = req.get("x-forwarded-host") ?? req.get("host");
@@ -19,8 +19,8 @@ router.get("/notifications/config", async (req, res) => {
 });
 router.post("/notifications/devices", async (req, res) => {
   const user = await getActiveSession(req);
-  if (!user || user.role === "customer") {
-    res.status(user ? 403 : 401).json({ error: "Worker account required" }); return;
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" }); return;
   }
   const parsed = RegisterNotificationDeviceBody.safeParse(req.body);
   if (!parsed.success || !validateDevice(parsed.data)) {

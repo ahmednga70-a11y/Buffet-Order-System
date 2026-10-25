@@ -133,6 +133,7 @@ export interface Order {
   menuItemNameAr: string;
   notes?: string;
   urgentAt?: string;
+  readyAt?: string;
   status: OrderStatus;
   createdAt: string;
   completedAt?: string;

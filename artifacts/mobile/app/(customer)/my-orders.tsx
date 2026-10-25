@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import colors from "@/constants/colors";
+import { PushNotificationControl } from "@/components/PushNotificationControl";
 
 function formatTime(iso: string) {
   const date = new Date(iso);
@@ -60,6 +61,8 @@ export default function MyOrdersScreen() {
   const cancelMutation = useCancelOrder();
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<{ id: string; message: string } | null>(null);
+  const [receiptError, setReceiptError] = useState("");
+  const [pickupTarget, setPickupTarget] = useState<string | null>(null);
 
   const handleCancel = async (id: string) => {
     setCancelError(null);
@@ -122,12 +125,15 @@ export default function MyOrdersScreen() {
   }, [orders]);
 
   const handleConfirm = async (id: string) => {
+    setReceiptError("");
     try {
       await confirmMutation.mutateAsync({ id });
+      setPickupTarget(null);
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
     } catch {
-      Alert.alert("خطأ", "مش قدر يأكد الاستلام");
+      setReceiptError("تعذّر تأكيد الاستلام. حدّث القائمة وحاول مرة أخرى.");
+      void queryClient.invalidateQueries({ queryKey: getGetOrdersQueryKey() });
     }
   };
 
@@ -150,7 +156,7 @@ export default function MyOrdersScreen() {
           <Text style={styles.itemName}>{item.menuItemNameAr}</Text>
           <View style={[styles.badge, item.status === "pending" && item.urgentAt ? styles.badgeUrgent : statusBadgeStyle(item.status)]}>
             <Text style={[styles.badgeText, (isDelivered || (item.status === "pending" && !!item.urgentAt)) && styles.badgeTextDelivered]}>
-              {item.status === "pending" && item.urgentAt ? "مستعجل" : statusLabel(item.status)}
+              {item.status === "pending" && item.readyAt ? "جاهز للاستلام" : item.status === "pending" && item.urgentAt ? "مستعجل" : statusLabel(item.status)}
             </Text>
           </View>
         </View>
@@ -163,7 +169,26 @@ export default function MyOrdersScreen() {
             : `طلبته الساعة ${formatTime(item.createdAt)}`}
         </Text>
 
-        {item.status === "pending" && (
+        {item.status === "pending" && item.readyAt ? <View style={styles.actionRow}>
+          <Text style={styles.actionPrompt}>طلبك جاهز — تقدر تستلمه من البوفيه</Text>
+          {pickupTarget === item.id ? <>
+            <Text style={styles.actionPrompt}>هل استلمت الطلب بالفعل من البوفيه؟</Text>
+            <View style={styles.actionBtns}>
+              <Pressable style={styles.urgentButton} disabled={confirmMutation.isPending} onPress={() => setPickupTarget(null)}>
+                <Text style={styles.urgentText}>رجوع</Text>
+              </Pressable>
+              <Pressable testID={`confirm-pickup-${item.id}`} style={styles.confirmBtn}
+                disabled={confirmMutation.isPending} onPress={() => handleConfirm(item.id)}>
+                <Text style={styles.confirmBtnText}>{confirmMutation.isPending ? "جارٍ التأكيد…" : "تأكيد الاستلام"}</Text>
+              </Pressable>
+            </View>
+          </> : <Pressable testID={`pickup-order-${item.id}`} style={styles.confirmBtn}
+            onPress={() => setPickupTarget(item.id)}>
+            <Text style={styles.confirmBtnText}>استلمت من البوفيه</Text>
+          </Pressable>}
+        </View> : null}
+
+        {item.status === "pending" && !item.readyAt && (
           item.urgentAt ? <Text style={styles.urgentText}>طلب مستعجل — تم إرسال طلب الاستعجال</Text> : (
             <Pressable style={styles.urgentButton} testID={`expedite-${item.id}`}
               onPress={() => handleExpedite(item.id)} disabled={expediteMutation.isPending || cancelMutation.isPending} accessibilityRole="button">
@@ -221,6 +246,8 @@ export default function MyOrdersScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
       <Text style={styles.title}>طلباتي</Text>
+      <PushNotificationControl />
+      {receiptError ? <Text accessibilityRole="alert" style={styles.cancelText}>{receiptError}</Text> : null}
 
       {isLoading ? (
         <View style={styles.center}>
