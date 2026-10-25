@@ -24,6 +24,8 @@ words to fonts.
 sentences were readable. The deployed JavaScript and menu API had correct text,
 but the published HTML advertised English. That makes browser translation a
 plausible separate cause; it is not proof of a native Android font failure.
+The user confirmed that the affected Xiaomi installation was added to the home
+screen from the browser, rather than installed from an APK.
 
 **How to apply:** Declare Arabic in the original exported document and prevent
 automatic translation of this Arabic-only interface, including customer names
