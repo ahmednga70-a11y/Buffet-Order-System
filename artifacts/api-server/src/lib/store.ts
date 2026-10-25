@@ -47,11 +47,12 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: "turkish-coffee", name: "Turkish Coffee", nameAr: "قهوة تركي", category: "hot", icon: "coffee" },
   { id: "nescafe", name: "Nescafe", nameAr: "نسكافيه", category: "hot", icon: "coffee" },
   { id: "hot-chocolate", name: "Hot Chocolate", nameAr: "كاكاو", category: "hot", icon: "coffee" },
+  { id: "hibiscus", name: "Hibiscus", nameAr: "كركديه", category: "hot", icon: "coffee" },
+  { id: "mint", name: "Mint", nameAr: "نعناع", category: "hot", icon: "coffee" },
+  { id: "anise", name: "Anise", nameAr: "ينسون", category: "hot", icon: "coffee" },
+  { id: "fenugreek", name: "Fenugreek", nameAr: "حلبة", category: "hot", icon: "coffee" },
+  { id: "green-tea", name: "Green Tea", nameAr: "شاي أخضر", category: "hot", icon: "coffee" },
   { id: "water", name: "Water", nameAr: "مياه", category: "cold", icon: "droplet" },
-  { id: "pepsi", name: "Pepsi", nameAr: "بيبسي", category: "cold", icon: "droplet" },
-  { id: "juice-orange", name: "Orange Juice", nameAr: "عصير برتقال", category: "juice", icon: "droplet" },
-  { id: "juice-mango", name: "Mango Juice", nameAr: "عصير مانجو", category: "juice", icon: "droplet" },
-  { id: "milk", name: "Milk", nameAr: "لبن", category: "other", icon: "droplet" },
 ];
 
 function toUser(row: typeof usersTable.$inferSelect): User {
