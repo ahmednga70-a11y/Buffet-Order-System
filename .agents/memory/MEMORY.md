@@ -5,3 +5,4 @@
 - [Database target verification](database-target-verification.md) — A production environment label can appear in the workspace; verify the actual database before fixtures.
 - [Order cancellation policy](order-lifecycle.md) — Cancel only pending orders; retain history, exclude cancelled orders from operational totals, and prevent delivery races.
 - [Web confirmations](web-confirmations.md) — React Native Alert callbacks do not run on web; critical writes need a visible cross-platform confirmation.
+- [Arabic typography](arabic-typography.md) — Bundle Arabic-capable fonts at every used weight; distinguish fallback problems from text-encoding corruption.
